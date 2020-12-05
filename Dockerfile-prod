@@ -1,0 +1,7 @@
+FROM openjdk:11-jre-slim
+
+WORKDIR /opt/advent-of-code
+
+ADD target/universal/advent-of-code-*.tgz .
+
+CMD [ "/opt/advent-of-code/bin/advent-of-code" ]
