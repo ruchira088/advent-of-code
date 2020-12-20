@@ -3,6 +3,7 @@ package com.ruchij
 import cats.implicits._
 import com.ruchij.DayTwelve.Direction.{East, North, South, West}
 import com.ruchij.DayTwelve.Instruction.Forward
+import com.ruchij.DayTwelve.WaypointPosition
 import com.ruchij.DayTwo.IntValue
 
 import scala.util.matching.Regex
@@ -93,6 +94,14 @@ object DayTwelve {
     val Origin: Position = Position(0, 0, Direction.East)
   }
 
+  case class WaypointPosition(x: Int, y: Int) {
+    def * (multiplier: Int): WaypointPosition = WaypointPosition(x * multiplier, y * multiplier)
+  }
+
+  object WaypointPosition {
+    val Origin: WaypointPosition = WaypointPosition(10, 1)
+  }
+
   val parse: String => Either[String, FerryInstruction] = {
     case FerryInstruction.Format(Instruction(instruction), IntValue(value)) =>
       Right(FerryInstruction(instruction, value))
@@ -120,15 +129,38 @@ object DayTwelve {
       execute(position)(FerryInstruction(position.direction, magnitude))
   }
 
+  def execute(position: Position, waypointPosition: WaypointPosition): FerryInstruction => (Position, WaypointPosition) = {
+    case FerryInstruction(_, 0) => position -> waypointPosition
+
+    case FerryInstruction(North, magnitude) => position -> waypointPosition.copy(y = waypointPosition.y + magnitude)
+
+    case FerryInstruction(South, magnitude) => position -> waypointPosition.copy(y = waypointPosition.y - magnitude)
+
+    case FerryInstruction(East, magnitude) => position -> waypointPosition.copy(x = waypointPosition.x + magnitude)
+
+    case FerryInstruction(West, magnitude) => position -> waypointPosition.copy(x = waypointPosition.x - magnitude)
+
+    case FerryInstruction(Forward, magnitude) =>
+      val WaypointPosition(x, y) = waypointPosition * magnitude
+
+      Position(position.x + x, position.y + y, position.direction) -> waypointPosition
+
+    case FerryInstruction(Turn.Left, magnitude) =>
+      execute(position, WaypointPosition(waypointPosition.y * -1, waypointPosition.x))(FerryInstruction(Turn.Left, magnitude - 90))
+
+    case FerryInstruction(Turn.Right, magnitude) =>
+      execute(position, WaypointPosition(waypointPosition.y, waypointPosition.x * -1))(FerryInstruction(Turn.Right, magnitude - 90))
+  }
+
   def solve(input: List[String]) =
     input
       .traverse(parse)
       .map {
-        _.foldLeft(Position.Origin) {
-          case (position, instruction) => execute(position)(instruction)
+        _.foldLeft(Position.Origin -> WaypointPosition.Origin) {
+          case ((position, waypoint), instruction) => execute(position, waypoint)(instruction)
         }
       }
       .map {
-        case Position(x, y, _) => math.abs(x) + math.abs(y)
+        case (Position(x, y, _), _) => math.abs(x) + math.abs(y)
       }
 }
