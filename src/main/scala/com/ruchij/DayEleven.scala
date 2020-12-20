@@ -12,7 +12,7 @@ object DayEleven {
 
       case _ if occupiedSeat == 0 => OccupiedSeat
 
-      case _ if occupiedSeat >= 4 => EmptySeat
+      case _ if occupiedSeat >= 5 => EmptySeat
 
       case state => state
     }
@@ -88,10 +88,7 @@ object DayEleven {
         .map {
           _.flatMap { coordinate =>
             grid.coordinate(coordinate.x, coordinate.y).map { state =>
-              Coordinate
-                .neighbours(coordinate)
-                .toList
-                .flatMap { case Coordinate(x, y) => grid.coordinate(x, y) }
+              linesOfSight(coordinate, grid)
                 .foldLeft(Environment(0, 0, 0)) {
                   case (env, EmptySeat) => env.copy(emptySeat = env.emptySeat + 1)
                   case (env, Floor) => env.copy(floor = env.floor + 1)
@@ -102,6 +99,28 @@ object DayEleven {
           }
         }
     }
+
+  def linesOfSight(coordinate: Coordinate, grid: Grid): Seq[State] =
+      for {
+        x <- Seq(-1, 0, 1)
+        y <- Seq(-1, 0, 1) if x != 0 || y != 0
+
+        state <- lineOfSight(coordinate, grid, _ + x, _ + y)
+      }
+      yield state
+
+  def lineOfSight(coordinate: Coordinate, grid: Grid, fx: Int => Int, fy: Int => Int): Option[State] =
+    lineOfSight(coordinate, grid, { case Coordinate(x, y) => Coordinate(fx(x), fy(y)) })
+
+  def lineOfSight(coordinate: Coordinate, grid: Grid, next: Coordinate => Coordinate): Option[State] = {
+    val updated = next(coordinate)
+
+    grid.coordinate(updated.x, updated.y)
+      .flatMap {
+        case State.Floor => lineOfSight(updated, grid, next)
+        case value => Some(value)
+      }
+  }
 
   def allCoordinates(grid: Grid): List[List[Coordinate]] =
     Range(0, grid.height).toList.map { y =>
