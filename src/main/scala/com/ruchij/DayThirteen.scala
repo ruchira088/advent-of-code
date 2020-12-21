@@ -3,8 +3,6 @@ package com.ruchij
 import com.ruchij.DayTwo.IntValue
 
 object DayThirteen {
-  val Start: Long = 100000000000000L
-
   type Remainder = Index
 
   case class Index(value: Int) extends AnyVal {
@@ -29,30 +27,18 @@ object DayThirteen {
         case (IntValue(int), index) => Index(index) -> int
       }
 
-  def crt(values: List[(Remainder, Int)]) = {
+  def crt(values: List[(Remainder, Int)]): Long = {
     val x: Long = values.map { case (_, mod) => mod.toLong }.product
 
     values
       .map {
-        case (remainder, mod) =>
-          val a = x / mod
-          val b = solve(x / mod, mod)
-          val c = a * b
-
-          val value = (c * (mod - remainder.value))
-
-          value
+        case (remainder, mod) => x / mod * solve(x / mod, mod) * (mod - remainder.value)
       }
       .sum % x
   }
 
-  def solve(xt: Long, bt: Long): Long = {
-    val a = xt % bt
-
-    val result: Long = find(a, bt).map(_.toLong).getOrElse(1)
-
-    result
-  }
+  def solve(xt: Long, bt: Long): Long =
+    find(xt % bt, bt).map(_.toLong).getOrElse(1)
 
   def find(a: Long, bt: Long): Option[Int] =
     LazyList.from(0, 1).find(x => (a * x) % bt == 1)
