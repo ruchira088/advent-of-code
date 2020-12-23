@@ -19,9 +19,9 @@ object App extends IOApp
 
   def solve[F[_]: Sync: ContextShift](blocker: Blocker) =
     for {
-      path <- Sync[F].delay(Paths.get("/Users/ruchira/Development/advent-of-code/input/day-13.txt"))
+      path <- Sync[F].delay(Paths.get("/Users/ruchira/Development/advent-of-code/input/day-14.txt"))
       inputData <- input[F](path, blocker).compile.toList
-      result = DayThirteen.solve(inputData)
+      result = DayFourteen.solve(inputData)
     }
     yield result
 

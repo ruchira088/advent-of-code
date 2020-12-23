@@ -9,7 +9,7 @@ object DayThirteen {
     override def toString: String = value.toString
   }
 
-  val solve: List[String] => Either[String, Any] = {
+  val solve: List[String] => Either[String, Long] = {
     case _ :: y :: Nil =>
       Right {
         crt(parseBusIds(y))
