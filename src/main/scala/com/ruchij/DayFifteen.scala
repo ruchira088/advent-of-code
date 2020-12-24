@@ -3,6 +3,8 @@ package com.ruchij
 import cats.implicits._
 
 object DayFifteen {
+  val Index = 30_000_000
+
   val solve: List[String] => Either[String, Any] = {
     case line :: Nil =>
       line.split(",").toList
@@ -11,24 +13,36 @@ object DayFifteen {
         }
         .map {
           numbers =>
-            expand(numbers, 30000000).get(30000000 - 1)
+            findValue(
+              numbers.lastOption.getOrElse(0),
+              numbers.length + 1,
+              numbers.zipWithIndex
+                .map { case (value, index) => value -> (index + 1) }
+                .foldLeft(Map.empty[Int, Int]) {
+                  case (past, (value, index)) => past + (value -> index)
+                },
+              Index
+            )
         }
 
     case _ => Left("Unexpected number of lines")
   }
 
-  def expand(input: List[Int], remaining: Int): List[Int] = {
-    if (remaining % 1000 == 0) {
-      println(remaining)
+  def findValue(previous: Int, length: Int, pastValues: Map[Int, Int], destination: Int): Int = {
+    val next = solve(previous, length - 1, pastValues)
+
+    if (length % 1000_000 == 0) {
+      println(length)
     }
 
-    if (remaining == 0) input else expand(input :+ next(input), remaining - 1)
+    if (length == destination) next
+    else findValue(next, length + 1, pastValues + (previous -> (length - 1)), destination)
   }
 
 
-  def next(input: List[Int]) =
-    Option(input.init.lastIndexOf(input.lastOption.getOrElse(0)))
-      .filter(_ != -1)
-      .map { beforeLastIndex => (input.size - 1) - beforeLastIndex }
+  def solve(previous: Int, length: Int, pastValues: Map[Int, Int]) =
+    pastValues.get(previous)
+      .map(offset => length - offset)
       .getOrElse(0)
+
 }
