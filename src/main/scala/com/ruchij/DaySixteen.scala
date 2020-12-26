@@ -13,21 +13,67 @@ object DaySixteen {
 
   case class FieldNumberRange(fieldName: String, rangeA: Range, rangeB: Range)
 
-  case class Ticket(value: List[Int]) extends AnyVal
+  object FieldNumberRange {
+    def isMatch(value: Int, fieldNumberRange: FieldNumberRange): Boolean =
+      fieldNumberRange.rangeA.contains(value) || fieldNumberRange.rangeB.contains(value)
+  }
+
+  case class Ticket(value: Vector[Int]) extends AnyVal
 
   def solve(input: List[String]) =
     parse(input).map {
-      case DaySixteenInput(fields, _, nearByTickets) =>
+      case DaySixteenInput(fields, myTicket, nearByTickets) =>
         val allFieldNumbers =
           fields.foldLeft(Set.empty[Int]) {
             case (numbers, FieldNumberRange(_, rangeA, rangeB)) =>
               numbers ++ rangeA.toSet ++ rangeB.toSet
           }
 
-      nearByTickets.flatMap(_.value)
-        .filter(number => !allFieldNumbers.contains(number))
-        .sum
+      val validTickets = (myTicket :: nearByTickets).filter { _.value.forall(allFieldNumbers.contains) }
+
+      deduce(possibleMappings(fields, validTickets), Map.empty)
+        .filter {
+          case (fieldName, _) => fieldName.startsWith("departure")
+        }
+        .flatMap {
+          case (_, index) => myTicket.value.get(index).map(_.toLong)
+        }
+        .product
     }
+
+  def deduce(mappings: List[(String, List[Int])], result: Map[String, Int]): Map[String, Int] =
+    mappings
+      .collectFirst {
+        case (name, index :: Nil) => name -> index
+      }
+      .fold(result) { case (name, index) =>
+        deduce(
+          mappings.collect {
+            case (fieldName, values) if name != fieldName => fieldName -> values.filter(_ != index)
+          },
+          result + (name -> index)
+        )
+      }
+
+  def possibleMappings(fieldNumberRanges: List[FieldNumberRange], tickets: List[Ticket]) = {
+    val fields: IndexedSeq[(Int, List[Int])] =
+      fieldNumberRanges.indices
+        .map {
+          index => index -> tickets.traverse(_.value.get(index)).getOrElse(List.empty)
+        }
+
+    fieldNumberRanges.map {
+      fieldNumberRange =>
+        fieldNumberRange.fieldName -> fields.filter {
+          case (_, values) =>
+            values.forall(number => FieldNumberRange.isMatch(number, fieldNumberRange))
+        }
+        .map {
+          case (index, _) => index
+        }
+        .toList
+    }
+  }
 
   def parse(input: List[String]): Either[String, DaySixteenInput] =
     for {
@@ -53,6 +99,6 @@ object DaySixteen {
       .traverse { word =>
         word.toIntOption.fold[Either[String, Int]](Left(s"""Unable to parse "$word" as an Int"""))(Right.apply)
       }
-      .map(Ticket.apply)
+      .map(value => Ticket(value.toVector))
 
 }
