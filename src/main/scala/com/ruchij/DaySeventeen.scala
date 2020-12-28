@@ -21,8 +21,8 @@ object DaySeventeen {
     val all: Seq[State] = Seq(Active, Inactive)
   }
 
-  case class Coordinate(x: Int, y: Int, z: Int) {
-    override def toString: String = s"($x, $y, $z)"
+  case class Coordinate(x: Int, y: Int, z: Int, w: Int) {
+    override def toString: String = s"($x, $y, $z, $w)"
   }
 
   object Coordinate {
@@ -32,8 +32,9 @@ object DaySeventeen {
       for {
         offsetX <- Offsets
         offsetY <- Offsets
-        offsetZ <- Offsets if offsetX != 0 || offsetY != 0 || offsetZ != 0
-      } yield Coordinate(coordinate.x + offsetX, coordinate.y + offsetY, coordinate.z + offsetZ)
+        offsetZ <- Offsets
+        offsetW <- Offsets if offsetX != 0 || offsetY != 0 || offsetZ != 0 || offsetW != 0
+      } yield Coordinate(coordinate.x + offsetX, coordinate.y + offsetY, coordinate.z + offsetZ, coordinate.w + offsetW)
   }
 
   def nextState(coordinate: Coordinate, cubes: Map[Coordinate, State]): State = {
@@ -62,7 +63,7 @@ object DaySeventeen {
           case (cube, (line, lineIndex)) =>
             line.zipWithIndex.foldLeft(cube) {
               case (map, (state, index)) =>
-                map + (Coordinate(index, lineIndex, 0) -> state)
+                map + (Coordinate(index, lineIndex, 0, 0) -> state)
             }
         }
       }
@@ -87,13 +88,15 @@ object DaySeventeen {
     val (maxX, minX) = boundary(cubes, _.x, 0)
     val (maxY, minY) = boundary(cubes, _.y, 0)
     val (maxZ, minZ) = boundary(cubes, _.z, 0)
+    val (maxW, minW) = boundary(cubes, _.w, 0)
 
     val coordinates =
       for {
         x <- List.range(minX - 1, maxX + 2)
         y <- List.range(minY - 1, maxY + 2)
         z <- List.range(minZ - 1, maxZ + 2)
-      } yield Coordinate(x, y, z)
+        w <- List.range(minW - 1, maxW + 2)
+      } yield Coordinate(x, y, z, w)
 
     coordinates.foldLeft(cubes) {
       case (value, coordinate) =>
