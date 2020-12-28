@@ -63,7 +63,9 @@ object DayEighteen {
       (input, value, operator) match {
         case ((number: Number) :: tail, None, None) => reduce(tail, Some(number), None)
 
-        case ((operator: Operator) :: tail, _, _) => reduce(tail, value, Some(operator))
+        case (Multiplication :: tail, Some(number), _) => Multiplication.run(number, reduce(tail, None, None))
+
+        case (Addition :: tail, _, _) => reduce(tail, value, Some(Addition))
 
         case ((number: Number) :: tail, Some(numberValue), Some(operatorValue)) =>
           reduce(tail, Some(operatorValue.run(number, numberValue)), None)
@@ -80,7 +82,6 @@ object DayEighteen {
 
         case (Nil, Some(value), None) => value
       }
-
 
     def bracket(input: List[Expression], count: Int, result: List[Expression]): (List[Expression], List[Expression]) =
       input match {
@@ -99,8 +100,6 @@ object DayEighteen {
 
 
   def solve(input: List[String]) = {
-    println(input)
-
     input.traverse(Expression.parse)
       .map {
         lines => lines.map(line => Expression.reduce(line, None, None)).map(_.value).sum
