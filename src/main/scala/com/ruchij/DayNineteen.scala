@@ -5,6 +5,8 @@ import cats.implicits._
 import com.ruchij.DayNineteen.Rule.{FixedValue, Pipe, RuleNumbers}
 import com.ruchij.DayTwo.IntValue
 
+import java.text.NumberFormat
+import scala.collection.mutable
 import scala.util.matching.Regex
 
 object DayNineteen {
@@ -108,9 +110,13 @@ object DayNineteen {
       .flatMap { rules =>
         rules
           .get(0)
-          .map(origin => evaluate(origin, rules, messages))
-          .fold[Either[String, List[List[FixedValue]]]](Left("Rule 0 does NOT exist"))(Right.apply)
-          .map(_.map(_.mkString).toSet)
+          .map(origin => evaluate(origin, rules, mutable.Map.empty, messages))
+          .fold[Either[String, List[String]]](Left("Rule 0 does NOT exist"))(Right.apply)
+          .map {
+            values =>
+              println(s"Size: ${NumberFormat.getIntegerInstance.format(values.size)}")
+              values.toSet
+          }
       }
 
   def parseRules(input: List[String]) =
@@ -123,23 +129,37 @@ object DayNineteen {
       }
       .map(_.toMap)
 
-  def evaluate(rule: Rule, rules: Map[Int, Rule], messages: List[String]): List[List[FixedValue]] =
+  def evaluate(rule: Rule, rules: Map[Int, Rule], cache: mutable.Map[Int, List[String]], messages: List[String]): List[String] =
     rule match {
-      case fixedValue: FixedValue => List(List(fixedValue))
+      case fixedValue: FixedValue => List(fixedValue.toString)
 
-      case Pipe(left, right) => evaluate(left, rules, messages) ++ evaluate(right, rules, messages)
+      case Pipe(left, right) =>
+        (evaluate(left, rules, cache, messages) ++ evaluate(right, rules, cache, messages))
+          .filter(rule => messages.exists(_.contains(rule)))
 
       case ruleNumbers: RuleNumbers =>
         ruleNumbers.numbers.toList
-          .flatMap(rules.get)
-          .map(rule => evaluate(rule, rules, messages))
-          .foldLeft(List.empty[List[FixedValue]]) {
+          .flatMap { number =>
+            println(number)
+            cache.get(number)
+              .orElse {
+                rules.get(number).map {
+                  rule =>
+                    evaluate(rule, rules, cache, messages)
+                      .filter(rule => messages.exists(_.contains(rule)))
+                }
+              }
+              .tapEach {
+                values => cache.put(number, values)
+              }
+          }
+          .foldLeft(List.empty[String]) {
             case (acc, values) =>
               if (acc.isEmpty) values
               else
-                acc.flatMap(accValue => values.map(value => accValue ++ value)).filter { rule =>
-                  messages.exists(_.contains(rule.map(_.toString).mkString))
-                }
+                acc
+                  .flatMap(accValue => values.map(value => accValue ++ value))
+                  .filter(rule => messages.exists(_.contains(rule)))
           }
     }
 
