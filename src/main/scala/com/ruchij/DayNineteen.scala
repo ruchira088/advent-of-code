@@ -79,17 +79,17 @@ object DayNineteen {
   }
 
   def solve(input: List[String]) =
-    ruleZero(input.takeWhile(_.nonEmpty))
-      .flatMap {
-        rules =>
-          parseMessages(input.dropWhile(_.nonEmpty).dropWhile(_.isEmpty))
-            .map { messages =>
-              messages.count(rules.contains)
-            }
+    parseMessages(input.dropWhile(_.nonEmpty).dropWhile(_.isEmpty))
+      .map(_.map(_.map(_.toString).mkString))
+      .flatMap { messages =>
+        ruleZero(input.takeWhile(_.nonEmpty), messages)
+          .map { rules =>
+            messages.count(rules.contains)
+          }
       }
 
-  def parseMessages(input: List[String]): Either[String, List[String]] =
-    input.traverse(parseMessage).map(_.map(_.mkString))
+  def parseMessages(input: List[String]): Either[String, List[List[FixedValue]]] =
+    input.traverse(parseMessage)
 
   def parseMessage(input: String): Either[String, List[FixedValue]] =
     input
@@ -103,12 +103,12 @@ object DayNineteen {
           )(Right.apply)
       }
 
-  def ruleZero(input: List[String]): Either[String, Set[String]] =
+  def ruleZero(input: List[String], messages: List[String]): Either[String, Set[String]] =
     parseRules(input)
       .flatMap { rules =>
         rules
           .get(0)
-          .map(origin => evaluate(origin, rules))
+          .map(origin => evaluate(origin, rules, messages))
           .fold[Either[String, List[List[FixedValue]]]](Left("Rule 0 does NOT exist"))(Right.apply)
           .map(_.map(_.mkString).toSet)
       }
@@ -123,19 +123,23 @@ object DayNineteen {
       }
       .map(_.toMap)
 
-  def evaluate(rule: Rule, rules: Map[Int, Rule]): List[List[FixedValue]] =
+  def evaluate(rule: Rule, rules: Map[Int, Rule], messages: List[String]): List[List[FixedValue]] =
     rule match {
       case fixedValue: FixedValue => List(List(fixedValue))
 
-      case Pipe(left, right) => evaluate(left, rules) ++ evaluate(right, rules)
+      case Pipe(left, right) => evaluate(left, rules, messages) ++ evaluate(right, rules, messages)
 
       case ruleNumbers: RuleNumbers =>
         ruleNumbers.numbers.toList
           .flatMap(rules.get)
-          .map(rule => evaluate(rule, rules))
+          .map(rule => evaluate(rule, rules, messages))
           .foldLeft(List.empty[List[FixedValue]]) {
             case (acc, values) =>
-              if (acc.isEmpty) values else acc.flatMap(accValue => values.map(value => accValue ++ value))
+              if (acc.isEmpty) values
+              else
+                acc.flatMap(accValue => values.map(value => accValue ++ value)).filter { rule =>
+                  messages.exists(_.contains(rule.map(_.toString).mkString))
+                }
           }
     }
 
