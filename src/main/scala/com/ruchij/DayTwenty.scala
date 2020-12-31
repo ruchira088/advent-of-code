@@ -1,15 +1,16 @@
 package com.ruchij
 
 import com.ruchij.DayTwo.IntValue
-
 import cats.implicits._
+import com.ruchij.DayTwenty.Color.Black
+
 import scala.util.matching.Regex
 
 object DayTwenty {
   sealed trait Color
 
   object Color {
-    val all: List[Color] = List(Black, White)
+    val all: List[Color] = List(Black, White, AnyColor)
 
     case object Black extends Color {
       override def toString: String = "#"
@@ -17,6 +18,10 @@ object DayTwenty {
 
     case object White extends Color {
       override def toString: String = "."
+    }
+
+    case object AnyColor extends Color {
+      override def toString: String = " "
     }
   }
 
@@ -51,7 +56,17 @@ object DayTwenty {
 
       Set(self, one, two, three)
     }
+
+    def removeBorder: List[List[Color]] =
+      grid.tail.init
+        .map {
+          row => row.tail.init
+        }
+
   }
+
+  def placeNext(gridOne: List[List[Color]], gridTwo: List[List[Color]]): List[List[Color]] =
+    gridOne.zipAll(gridTwo, List.empty, List.empty).map { case (one, two) => one ++ two }
 
   val TileNumber: Regex = "Tile (\\d+):".r
 
@@ -60,28 +75,59 @@ object DayTwenty {
     else grid.flatMap(_.headOption).reverse :: rotate(grid.map(_.tail))
 
   def solve(input: List[String]) =
-    parseInput(input).map {
+    for {
+      grid <- image(input)
+      seaMonster <- seaMonsterCoordinates
+
+      count = Tile(0, grid).allPermutations.map(_.grid).flatMap(image => findSeaMonsters(image, seaMonster)).size
+
+      all = grid.map(_.count(_ == Black)).sum
+      seaMonsterCount = seaMonster.size * count
+    }
+    yield all - seaMonsterCount
+
+  def image(input: List[String]): Either[String, List[List[Color]]] =
+    parseInput(input).flatMap {
       tiles =>
-        noMatch(tiles)
+        corners(tiles).map {
+          tile =>
+            tile -> findOrigin(tile, tiles).size
+        }
+          .maxByOption { case (_, size) => size }
+          .map {
+            case (tile, _) =>
+              (tile :: findRow(tile, tiles.filter(_.id != tile.id), _.bottomBorder, _.topBorder))
+                .map {
+                  value => value :: findRow(value, tiles.filter(_.id != value.id), _.rightBorder, _.leftBorder)
+                }
+                .flatMap {
+                  row => row.foldLeft(List.empty[List[Color]]) {
+                    case (acc, tile) => placeNext(acc, tile.removeBorder)
+                  }
+                }
+          }
+          .fold[Either[String, List[List[Color]]]](Left("Unable to create image"))(Right.apply)
     }
 
-  def noMatch(tiles: List[Tile]) =
+  def corners(tiles: List[Tile]) =
     tiles.filter {
       tile =>
         val allBorders: List[List[Color]] = tiles.filter(_.id != tile.id).flatMap(_.borders)
 
         tile.borders.count(allBorders.contains) == 4
     }
-      .map(_.id.toLong)
-      .product
+
+  def findOrigin(corner: Tile, tiles: List[Tile]) =
+    (corner :: findRow(corner, tiles.filter(_.id != corner.id), _.rightBorder, _.leftBorder)) ++
+      (corner :: findRow(corner, tiles.filter(_.id != corner.id), _.bottomBorder, _.topBorder))
 
 
-  def findRow(tile: Tile, tiles: List[Tile]): List[Tile] =
+  def findRow(tile: Tile, tiles: List[Tile], borderFn: Tile => List[Color], matcherFn: Tile => List[Color]): List[Tile] =
     tiles
-      .find(_.borders.contains(tile.rightBorder))
-      .flatMap { _.allPermutations.find(_.leftBorder == tile.rightBorder) }
+      .find(_.borders.contains(borderFn(tile)))
+      .flatMap { _.allPermutations.find(value => borderFn(tile) == matcherFn(value)) }
       .fold[List[Tile]](List.empty) {
-        next => next :: findRow(next, tiles.filter(_.id != next.id))
+        next => next :: findRow(next, tiles.filter(_.id != next.id), borderFn, matcherFn)
       }
 
   def prettyPrint[A](grid: List[List[A]]): String =
@@ -115,4 +161,54 @@ object DayTwenty {
           )
       }
     }
+
+  implicit class GridWrapper[+A](grid: List[List[A]]) {
+    def getValue(x: Int, y: Int): Option[A] =
+      for {
+        row <- grid.get(y)
+        value <- row.get(x)
+      }
+      yield value
+  }
+
+  case class Coordinate(x: Int, y: Int) {
+    def shiftRight: Coordinate = Coordinate(x + 1, y)
+
+    def shiftToNextRow: Coordinate = Coordinate(0, y + 1)
+
+    def withOffset(coordinate: Coordinate): Coordinate = Coordinate(x + coordinate.x, y + coordinate.y)
+  }
+
+  def allCoordinates[A](grid: List[List[A]]): List[(Coordinate, A)] =
+    grid.zipWithIndex.flatMap {
+      case (row, y) =>
+        row.zipWithIndex.map {
+          case (value, x) => Coordinate(x, y) -> value
+        }
+    }
+
+  val SeaMonster: String =
+    """                  #
+      |#    ##    ##    ###
+      | #  #  #  #  #  #   """.stripMargin
+
+  def parseSeaMonster: Either[String, List[List[Color]]] =
+    parseGrid(SeaMonster.split("\n").toList)
+
+  def seaMonsterCoordinates: Either[String, List[Coordinate]] =
+    parseSeaMonster.map(allCoordinates)
+      .map { coordinates => coordinates.collect { case (coordinate, Black) => coordinate }}
+
+  def hasSeaMonsters(image: List[List[Color]], seaMonster: List[Coordinate], coordinate: Coordinate) =
+    seaMonster.map(_.withOffset(coordinate))
+      .forall {
+        case Coordinate(x, y) => image.getValue(x, y).contains(Black)
+      }
+
+  def findSeaMonsters(image: List[List[Color]], seaMonster: List[Coordinate]): List[Coordinate] =
+    allCoordinates(image).map { case (coordinate, _) => coordinate }
+      .filter {
+        coordinate => hasSeaMonsters(image, seaMonster, coordinate)
+      }
+
 }
