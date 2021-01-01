@@ -18,11 +18,15 @@ object DayTwentyOne {
 
   def solve(input: List[String]) =
     input.traverse(parseLine)
-      .map { lines => lines -> reduce(deduce(lines), changed = true) }
-      .map { case (lines, mappings) =>
-        val ingredientsWithAllergen = mappings.values.flatten.toSet
-
-        lines.flatMap(_.ingredients.toList).count(ingredient => !ingredientsWithAllergen.contains(ingredient))
+      .map { lines =>
+        reduce(deduce(lines), changed = true).toList
+          .sortBy {
+            case (allergen, _) => allergen.value
+          }
+          .map {
+            case (_, value) => value.map(_.value).mkString
+          }
+          .mkString(",")
       }
 
   val parseLine: String => Either[String, Line] = {
