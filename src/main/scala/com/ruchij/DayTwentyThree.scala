@@ -3,62 +3,61 @@ package com.ruchij
 import cats.implicits._
 
 object DayTwentyThree {
+  def run(cups: Array[Int]): Array[Int] = {
+    val currentCup = cups(0)
 
-  case class CupCircle(cups: List[Int], currentCup: Int) {
-    val currentCupIndex: Int = cups.indexOf(currentCup)
+    val cupOne = cups(currentCup)
+    val cupTwo = cups(cupOne)
+    val cupsThree = cups(cupTwo)
 
-    def get(index: Int): Int =
-      if (index < 0) get(cups.size + index)
-      else cups.get(index).getOrElse(get(index - cups.size))
+    val destinationCup = findDestinationCup(currentCup - 1, Set(cupOne, cupTwo, cupsThree), cups.length - 1)
+    val dest = cups(destinationCup)
 
-    def label: String =
-      (cups.dropWhile(_ != 1) ++ cups.takeWhile(_ != 1)).filter(_ != 1).mkString
+    cups(destinationCup) = cupOne
+    cups(0) = cups(cupsThree)
+    cups(currentCup) = cups(cupsThree)
+
+    cups(cupsThree) = dest
+
+    cups
   }
 
-  object CupCircle {
-    def pickThreeCups(cupCircle: CupCircle): (CupCircle, List[Int]) = {
-      val picked =
-        List.range(cupCircle.currentCupIndex + 1, cupCircle.currentCupIndex + 4)
-          .map(cupCircle.get)
+  def run(cups: Array[Int], count: Int): Array[Int] =
+    if (count == 0) cups else run(run(cups), count - 1)
 
-     CupCircle(cupCircle.cups.filter(number => !picked.contains(number)), cupCircle.currentCup) -> picked
-    }
+  def findDestinationCup(index: Int, pickedCups: Set[Int], size: Int): Int =
+    if (pickedCups.contains(index))
+      findDestinationCup(index - 1, pickedCups, size)
+    else if (index < 1) findDestinationCup(size, pickedCups, size)
+    else index
 
-    def destinationCup(cupCircle: CupCircle): Int =
-      destinationCup(cupCircle.cups, cupCircle.currentCup - 1)
-
-    def destinationCup(cups: List[Int], value: Int): Int =
-      if (cups.contains(value)) value
-      else if (cups.min > value) destinationCup(cups, cups.max)
-      else destinationCup(cups, value - 1)
-
-    def combine(cupCircle: CupCircle, dest: Int, picked: List[Int]) = {
-      val (listA, listB) = cupCircle.cups.splitAt(cupCircle.cups.indexOf(dest) + 1)
-      val cups = listA ++ picked ++ listB
-
-      CupCircle(cups, (cups ++ cups).apply(cups.indexOf(cupCircle.currentCup) + 1))
-    }
-
-    def run(cupCircle: CupCircle): CupCircle = {
-      val (newCupCircle, picked) = pickThreeCups(cupCircle)
-      val dest = destinationCup(newCupCircle)
-
-      combine(newCupCircle, dest, picked)
-    }
-
-    def run(cupCircle: CupCircle, moves: Int): CupCircle =
-      if (moves == 0) cupCircle else run(run(cupCircle), moves - 1)
-  }
+  def collect(array: Array[Int], index: Int, result: List[Int]): List[Int] =
+    if (result.contains(index)) result
+    else collect(array, array(index), if (index == 0) result else result :+ index)
 
   def solve(input: List[String]) =
-    parse("219347865").map {
-      cupCircle => CupCircle.run(cupCircle, 100).label
-    }
+    parse("219347865")
+      .map(cups => run(cups, 10_000_000))
+      .map {
+        cups => cups(1).toLong * cups(cups(1)).toLong
+      }
 
   def parse(input: String) =
     input.split("").toList.traverse(_.toIntOption)
-      .collect {
-        case values @ head :: _ => CupCircle(values, head)
+      .map {
+        values => values.toVector ++ Vector.range(values.size + 1, 1_000_000 + 1)
       }
+      .map {
+        cups =>
+          val array = new Array[Int](cups.length + 1)
 
+          array(0) = cups(0)
+
+          cups.zip(cups.tail ++ cups.take(1)).foreach {
+            case (x, y) =>
+              array(x) = y
+          }
+
+        array
+      }
 }
