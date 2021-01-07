@@ -7,6 +7,20 @@ object DayTwentyFour {
     override def toString: String = s"[$x, $y]"
   }
 
+  object Coordinate {
+    val neighbours: Coordinate => Set[Coordinate] = {
+      case Coordinate(x, y) =>
+        Set(
+          Coordinate(x + 1, y),
+          Coordinate(x + 0.5, y + 1),
+          Coordinate(x - 0.5, y + 1),
+          Coordinate(x - 1, y),
+          Coordinate(x - 0.5, y - 1),
+          Coordinate(x + 0.5, y - 1)
+        )
+    }
+  }
+
   sealed trait TileSide {
     val label: String
 
@@ -59,23 +73,49 @@ object DayTwentyFour {
     val all = List(West, NorthWest, NorthEast, East, SouthEast, SouthWest)
 
     def unapply(instructions: String): Option[(TileSide, String)] =
-      all.find(tile => instructions.startsWith(tile.label))
-        .map {
-          tile => tile -> instructions.drop(tile.label.length)
+      all
+        .find(tile => instructions.startsWith(tile.label))
+        .map { tile =>
+          tile -> instructions.drop(tile.label.length)
         }
 
   }
 
   def solve(input: List[String]) =
-    input.traverse { line => parse(line, List.empty) }
+    input
+      .traverse { line =>
+        parse(line, List.empty)
+      }
       .map { _.map(move) }
       .map {
         _.groupBy(identity)
-          .toList
-          .map { case (coordinate, values) => values.length -> coordinate }
-          .groupBy { case (count, _) => count }
-          .map { case (count, values) => count -> values.length }
+          .filter {
+            case (_, values) => values.length % 2 == 1
+          }
+          .map {
+            case (coordinate, _) => coordinate
+          }
       }
+      .map {
+        blackTiles => calculateBlackTiles(blackTiles.toSet, 100).size
+      }
+
+  def calculateBlackTiles(blackTiles: Set[Coordinate], days: Int): Set[Coordinate] =
+    if (days == 0) blackTiles
+    else
+      calculateBlackTiles(
+        blackTiles
+          .flatMap(Coordinate.neighbours)
+          .filter { tile =>
+            val isBlack = blackTiles.contains(tile)
+            val blackNeighbours = Coordinate.neighbours(tile).count(blackTiles.contains)
+
+            if (isBlack) blackNeighbours == 1 || blackNeighbours == 2
+            else blackNeighbours == 2
+          },
+        days - 1
+      )
+
 
   def parse(line: String, result: List[TileSide]): Either[String, List[TileSide]] =
     line match {
@@ -90,5 +130,4 @@ object DayTwentyFour {
     tileSides.foldLeft(Coordinate(0, 0)) {
       case (coordinate, tileSide) => tileSide.move(coordinate)
     }
-
 }
