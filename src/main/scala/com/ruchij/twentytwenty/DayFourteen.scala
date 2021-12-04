@@ -1,9 +1,9 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import java.lang.{Long => JavaLong}
 
 import cats.implicits._
-import com.ruchij.DayFourteen.InputValue.{Mask, MemoryAssignment}
+import com.ruchij.twentytwenty.DayFourteen.InputValue.{Mask, MemoryAssignment}
 
 import scala.util.matching.Regex
 
@@ -119,7 +119,7 @@ object DayFourteen {
 
     case value :: Nil => List(value.toString)
 
-    case value :: tail => expand(tail).map(result => value + result)
+    case value :: tail => expand(tail).map(result => s"$value$result")
 
     case Nil => List.empty
   }

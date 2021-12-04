@@ -1,4 +1,4 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 object DaySix {
   def solve(input: List[String]) =

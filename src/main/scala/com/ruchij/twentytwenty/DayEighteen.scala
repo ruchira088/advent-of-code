@@ -1,7 +1,7 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayFourteen.LongValue
+import com.ruchij.twentytwenty.DayFourteen.LongValue
 
 object DayEighteen {
   sealed trait Expression

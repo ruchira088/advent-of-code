@@ -14,12 +14,11 @@ lazy val root =
       buildInfoPackage := "com.eed3si9n.ruchij",
       topLevelDirectory := None,
       scalacOptions ++= Seq("-Xlint", "-feature"),
-      addCompilerPlugin(kindProjector),
-      addCompilerPlugin(scalaTypedHoles)
+      addCompilerPlugin(kindProjector)
     )
 
 lazy val rootDependencies =
-  Seq(fs2Io)
+  Seq(fs2IO)
 
 lazy val rootTestDependencies =
   Seq(scalaTest, pegdown)

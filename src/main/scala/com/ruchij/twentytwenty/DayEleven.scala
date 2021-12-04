@@ -1,7 +1,7 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayEleven.State.{EmptySeat, Floor, OccupiedSeat}
+import com.ruchij.twentytwenty.DayEleven.State.{EmptySeat, Floor, OccupiedSeat}
 
 object DayEleven {
   case class Coordinate(x: Int, y: Int)

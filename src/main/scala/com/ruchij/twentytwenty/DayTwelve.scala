@@ -1,10 +1,9 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayTwelve.Direction.{East, North, South, West}
-import com.ruchij.DayTwelve.Instruction.Forward
-import com.ruchij.DayTwelve.WaypointPosition
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayTwelve.Direction.{East, North, South, West}
+import com.ruchij.twentytwenty.DayTwelve.Instruction.Forward
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 import scala.util.matching.Regex
 

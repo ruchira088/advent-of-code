@@ -1,9 +1,9 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.data.NonEmptyList
 import cats.implicits._
-import com.ruchij.DayNineteen.Rule.{FixedValue, Pipe, RuleNumbers}
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayNineteen.Rule.{FixedValue, Pipe, RuleNumbers}
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 import java.text.NumberFormat
 import scala.collection.mutable

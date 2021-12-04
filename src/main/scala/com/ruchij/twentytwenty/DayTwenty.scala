@@ -1,8 +1,8 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayTwo.IntValue
 import cats.implicits._
-import com.ruchij.DayTwenty.Color.Black
+import com.ruchij.twentytwenty.DayTwenty.Color.Black
 
 import scala.util.matching.Regex
 

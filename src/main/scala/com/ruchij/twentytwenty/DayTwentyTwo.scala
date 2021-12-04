@@ -1,7 +1,7 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 import scala.annotation.tailrec
 import scala.util.matching.Regex

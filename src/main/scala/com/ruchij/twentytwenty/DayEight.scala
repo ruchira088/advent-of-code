@@ -1,8 +1,8 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayEight.InstructionType.{Accumulator, Jump, Nop}
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayEight.InstructionType.{Accumulator, Jump, Nop}
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 object DayEight {
   sealed trait InstructionType {

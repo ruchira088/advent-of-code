@@ -1,9 +1,9 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.Semigroup
 import cats.implicits._
 import cats.kernel.Monoid
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 import scala.util.matching.Regex
 

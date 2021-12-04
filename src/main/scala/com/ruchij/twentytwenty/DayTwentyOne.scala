@@ -1,7 +1,7 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
 import cats.implicits._
-import com.ruchij.DayTwentyOne.Line.Group
+import com.ruchij.twentytwenty.DayTwentyOne.Line.Group
 
 import scala.util.matching.Regex
 

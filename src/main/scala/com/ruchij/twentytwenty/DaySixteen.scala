@@ -1,6 +1,6 @@
-package com.ruchij
+package com.ruchij.twentytwenty
 
-import com.ruchij.DayTwo.IntValue
+import com.ruchij.twentytwenty.DayTwo.IntValue
 
 import cats.implicits._
 import scala.util.matching.Regex
