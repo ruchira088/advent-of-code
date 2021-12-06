@@ -55,19 +55,22 @@ object DayFour {
   def play(game: Game): Either[String, Int] =
     game.numbers match {
       case head :: tail =>
-        turn(head, game.boards) match {
-          case None => play(Game(tail, game.boards))
 
-          case Some(board) => Right(BingoBoard.unmarkedSum(board) * head)
+        winners(head, game.boards) match {
+          case board :: Nil if game.boards.size == 1 =>
+            Right(BingoBoard.unmarkedSum(board) * head)
+
+          case winningBoards =>
+            play(Game(tail, game.boards.filter(value => !winningBoards.exists(board => board.eq(value)))))
         }
 
       case _ => Left("No winner")
     }
 
-  def turn(number: Int, boards: Seq[BingoBoard]) = {
+  def winners(number: Int, boards: Seq[BingoBoard]) = {
     boards.foreach { board => board.mark(number) }
 
-    boards.find(BingoBoard.isWinner)
+    boards.filter(BingoBoard.isWinner).toList
   }
 
   def parse(input: List[String]) =
