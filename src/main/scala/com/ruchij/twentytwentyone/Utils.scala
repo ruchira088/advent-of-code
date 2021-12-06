@@ -37,7 +37,6 @@ object Utils {
         monad.flatMap(f)
 
       override def pure[A](value: => A): Either[C, A] = Right(value)
-
     }
 
 }
