@@ -3,12 +3,17 @@ package com.ruchij.twentytwentyone
 import com.ruchij.twentytwentyone.Utils.IntValue
 import Utils._
 
+import scala.annotation.tailrec
+
 object DayFive {
   case class Coordinate(x: Int, y: Int) {
     override def toString: String = s"($x, $y)"
   }
 
   case class Line(start: Coordinate, end: Coordinate) {
+    def gradient: Option[Int] =
+      if (start.x == end.x) None else Some((end.y - start.y)/(end.x - start.x))
+
     override def toString: String = s"$start -> $end"
   }
 
@@ -18,26 +23,24 @@ object DayFive {
         Range.inclusive(math.min(line.start.y, line.end.y), math.max(line.start.y, line.end.y)).map(y => Coordinate(line.start.x, y))
       else if (line.start.y == line.end.y)
         Range.inclusive(math.min(line.start.x, line.end.x), math.max(line.start.x, line.end.x)).map(x => Coordinate(x, line.start.y))
+      else if (line.gradient.exists(gradient => math.abs(gradient) == 1)) {
+        val (first, second) = if (line.start.x < line.end.x) (line.start, line.end) else (line.end, line.start)
+        val gradient = line.gradient.getOrElse(throw new Exception("Gradient is infinite"))
+
+        @tailrec
+        def cords(current: Coordinate, end: Coordinate, result: Seq[Coordinate]): Seq[Coordinate] = {
+          val updated = result :+ current
+
+          if (current == end) updated else cords(Coordinate(current.x + 1, current.y + gradient), end, updated)
+        }
+
+        cords(first, second, Seq.empty)
+      }
       else Seq.empty
-  }
-
-  class Tile(var count: Int) {
-    def increment() = count += 1
-
-    override def toString: String = count.toString
-  }
-
-  case class Grid(value: Seq[Seq[Tile]]) {
-    override def toString: String =
-      value.map(_.mkString(" ")).mkString("\n")
   }
 
   def solve(input: List[String]) =
     parse(input).map { lines =>
-      val dimensions = gridSize(lines)
-
-      val grid = Grid(Seq.fill(dimensions.y)(Seq.fill(dimensions.x)(new Tile(0))))
-
       lines.flatMap(Line.coordinates)
         .groupBy(identity)
         .map {
@@ -62,12 +65,4 @@ object DayFive {
       case _ => Left(s"""Unable to parse "$input" as a coordinate""")
     }
 
-  def gridSize(lines: Seq[Line]): Coordinate =
-    lines.foldLeft(Coordinate(0, 0)) {
-      (size, line) =>
-        Coordinate(
-          math.max(math.max(size.x, line.start.x), line.end.x),
-          math.max(math.max(size.y, line.start.y), line.end.y)
-        )
-    }
 }
