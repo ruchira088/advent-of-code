@@ -11,7 +11,14 @@ object DaySeven {
   }
 
   def costToMove(crabs: Seq[Int], position: Int) =
-    crabs.map(current => math.abs(current - position)).sum
+    crabs
+      .map {
+        current =>
+          val distance = math.abs(current - position)
+
+          if (distance == 0) 0 else distance * (distance + 1) / 2
+      }
+      .sum
 
   def minimize(crabs: Seq[Int], lines: List[Int], minimum: Int): Int =
     lines match {
