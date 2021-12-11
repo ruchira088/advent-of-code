@@ -1,6 +1,6 @@
 package com.ruchij.twentytwentyone
 
-import Utils._
+import com.ruchij.twentytwentyone.Utils._
 
 object DayNine {
   case class Coordinate(x: Int, y: Int)
@@ -19,8 +19,7 @@ object DayNine {
       for {
         row <- gridValues.getIndex(coordinate.y)
         value <- row.getIndex(coordinate.x)
-      }
-      yield value
+      } yield value
 
     override def toString: String =
       gridValues.map(_.mkString).mkString("\n")
@@ -30,26 +29,42 @@ object DayNine {
     val grid = parse(input)
 
     val allCoordinates =
-      grid.gridValues.indices.flatMap {
-        y => grid.gridValues.getIndex(y).toList.flatMap {
-          row => row.indices.map { x => Coordinate(x, y) }
+      grid.gridValues.indices.flatMap { y =>
+        grid.gridValues.getIndex(y).toList.flatMap { row =>
+          row.indices.map { x =>
+            Coordinate(x, y)
+          }
         }
       }
 
-    allCoordinates.flatMap { coordinate =>
-      val neighbours = grid.neighbours(coordinate)
-      val maybeValue = grid.getValue(coordinate)
+    val lowestPoints: Seq[Coordinate] =
+      allCoordinates.filter { coordinate =>
+        val neighbours = grid.neighbours(coordinate)
+        val maybeValue = grid.getValue(coordinate)
 
-      val isLowest =
         neighbours.forall { neighbour =>
           grid.getValue(neighbour).forall(neighbourValue => maybeValue.exists(_ < neighbourValue))
         }
+      }
 
-      if (isLowest) maybeValue else None
-    }
-      .map(_ + 1)
-      .sum
+    lowestPoints
+      .map { coordinate => findBasin(Set(coordinate), Set.empty, grid).size }
+      .sorted
+      .reverse
+      .take(3)
+      .product
   }
+
+  def findBasin(coordinates: Set[Coordinate], visited: Set[Coordinate], grid: Grid): Set[Coordinate] =
+    coordinates.headOption match {
+      case None => visited
+
+      case Some(coordinate) =>
+        val updated =
+          grid.neighbours(coordinate).diff(visited).filter(coordinate => grid.getValue(coordinate).exists(_ < 9))
+
+        findBasin(coordinates.tail ++ updated, visited + coordinate, grid)
+    }
 
   def parse(input: List[String]): Grid =
     Grid {
