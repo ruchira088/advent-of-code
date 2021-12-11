@@ -17,6 +17,16 @@ object DayEleven {
   case class OctopusGrid(grid: Map[Coordinate, Int])
 
   object OctopusGrid {
+    def allFlash(count: Int, octopusGrid: OctopusGrid): Int =
+      if (octopusGrid.grid.forall { case (_, energy) => energy == 0 }) count
+      else allFlash(
+        count + 1,
+        {
+          val (grid, _) = oneStep(octopusGrid)
+          grid
+        }
+      )
+
     def steps(count: Int, octopusGrid: OctopusGrid, flashes: Int): Int =
       if (count == 0) flashes
       else {
@@ -69,7 +79,7 @@ object DayEleven {
           .toMap
     }
 
-    OctopusGrid.steps(100, octopusGrid, 0)
+    OctopusGrid.allFlash(0, octopusGrid)
   }
 
 }
