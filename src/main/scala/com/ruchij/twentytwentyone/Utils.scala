@@ -39,4 +39,9 @@ object Utils {
       override def pure[A](value: => A): Either[C, A] = Right(value)
     }
 
+  implicit class IndexSeqOps[+A](indexedSeq: IndexedSeq[A]) {
+    def getIndex(index: Int): Option[A] =
+      if (index >= 0 && indexedSeq.size > index) Some(indexedSeq(index)) else None
+  }
+
 }
