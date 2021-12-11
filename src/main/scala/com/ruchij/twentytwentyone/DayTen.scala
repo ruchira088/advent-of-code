@@ -14,7 +14,7 @@ object DayTen {
 
   val reverseBrackets: Map[Char, Char] = Brackets.map { case (x, y) => y -> x }
 
-  val Score =
+  val ScoreOne =
     Map(
       ')' -> 3,
       ']' -> 57,
@@ -22,12 +22,26 @@ object DayTen {
       '>' -> 25137
     )
 
-  def solve(input: List[String]) =
-    input.map { line => check(line.toList, List.empty) }
+  val ScoreTwo =
+    Map(
+      ')' -> 1,
+      ']' -> 2,
+      '}' -> 3,
+      '>' -> 4
+    )
+
+  def solve(input: List[String]) = {
+    val results = input.map { line => check(line.toList, List.empty) }
       .collect {
-        case Result.Error(char) => Score.getOrElse(char, 0)
+        case Result.Incomplete(chars) =>
+          chars.foldLeft(0L) {
+            (result, char) => result * 5 + ScoreTwo(Brackets(char))
+          }
       }
-      .sum
+      .sorted
+
+    results(results.size / 2)
+  }
 
   def check(line: List[Char], stack: List[Char]): Result =
     line match {
