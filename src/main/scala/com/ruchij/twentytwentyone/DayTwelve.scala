@@ -4,22 +4,18 @@ object DayTwelve {
   val Destination = "end"
   val Start = "start"
 
-  def solve(input: List[String]) = {
-    val paths = new Array[List[String]](1_000_000)
+  def solve(input: List[String]) =
+    travel(Vector(List(Start)), 0, parse(input))
 
-    paths.update(0, List(Start))
+  def travel(paths: Vector[List[String]], successCount: Int, mappings: Map[String, Set[String]]): Int =
+    paths.headOption match {
+      case Some(Destination :: _) =>
+        travel(paths.tail, successCount + 1, mappings)
 
-    travel(paths, 0, 1, 0, parse(input))
-  }
-
-  def travel(paths: Array[List[String]], index: Int, size: Int, successCount: Int, mappings: Map[String, Set[String]]): Int =
-    paths.apply(index) match {
-      case Destination :: _ =>
-        travel(paths, index + 1, size, successCount + 1, mappings)
-
-      case path @ head :: _ =>
-        val nextPaths: Set[String] =
+      case Some(path @ head :: _) =>
+        val nextPaths: Vector[String] =
           mappings.getOrElse(head, Set.empty)
+            .toVector
             .filter {
               next =>
                 next.forall(_.isUpper) ||
@@ -31,12 +27,8 @@ object DayTwelve {
                   }))
             }
 
-        nextPaths.zipWithIndex.foreach { case (next, i) =>
-          paths.update(size + i, next :: path)
-        }
 
-
-        travel(paths, index + 1, size + nextPaths.size, successCount, mappings)
+        travel(paths.tail ++ nextPaths.map(next => next +: path), successCount, mappings)
 
       case _ => successCount
     }
