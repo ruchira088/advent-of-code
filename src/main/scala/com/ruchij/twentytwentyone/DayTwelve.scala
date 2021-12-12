@@ -5,18 +5,29 @@ object DayTwelve {
   val Start = "start"
 
   def solve(input: List[String]) =
-    travel(List(List(Start)), Seq.empty, parse(input)).size
+    travel(List(List(Start)), List.empty, parse(input)).size
 
-  def travel(paths: List[List[String]], success: Seq[Seq[String]], mappings: Map[String, Set[String]]): Seq[Seq[String]] =
+  def travel(paths: List[List[String]], success: List[List[String]], mappings: Map[String, Set[String]]): Seq[Seq[String]] =
     paths match {
       case (path @ Destination :: _) :: rest =>
-        travel(rest, success :+ path, mappings)
+        travel(rest, path :: success, mappings)
 
       case (first @ head :: tail) :: rest =>
         val nextPaths =
-          mappings.getOrElse(head, Set.empty).filter(next => next.forall(_.isUpper) || !tail.contains(next)).toList
+          mappings.getOrElse(head, Set.empty)
+            .filter {
+              next =>
+                next.forall(_.isUpper) ||
+                  (next != Start && (!tail.contains(next) || {
+                    first.filter(_.forall(_.isLower))
+                      .groupBy(identity)
+                      .map { case (path, paths) => path -> paths.size }
+                      .forall { case (_, count) => count == 1 }
+                  }))
+            }
+            .toList
 
-        travel(rest ++ nextPaths.map(path => path :: first), success, mappings)
+        travel(rest ::: nextPaths.map(path => path :: first), success, mappings)
 
       case _ => success.map(_.reverse)
     }
