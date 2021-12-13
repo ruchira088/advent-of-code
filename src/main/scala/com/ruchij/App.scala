@@ -2,7 +2,7 @@ package com.ruchij
 
 import cats.effect.{ExitCode, IO, IOApp, Sync}
 import cats.implicits._
-import com.ruchij.twentytwentyone.DayTwelve
+import com.ruchij.twentytwentyone.DayThirteen
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import fs2.text.lines
@@ -19,11 +19,12 @@ object App extends IOApp
 
   def solve[F[_]: Sync: Files] =
     for {
-      path <- Sync[F].blocking {
-        Path.fromNioPath(Paths.get("./input/2021/day-12.txt"))
+      path <- Sync[F].blocking[Path] {
+        Path.fromNioPath(Paths.get("./input/2021/day-13.txt"))
       }
+
       inputData <- input[F](path).compile.toList
-      result = DayTwelve.solve(inputData)
+      result = DayThirteen.solve(inputData)
     }
     yield result
 
