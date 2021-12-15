@@ -20,13 +20,27 @@ object DayFifteen {
   case class Cave(grid: Map[Coordinate, Int])
 
   def solve(input: List[String]) =  {
-    val cave = parse(input)
+    val cave: Map[Coordinate, Int] = parse(input)
 
+    val repeated: Map[Coordinate, Int] =
+      cave.flatMap {
+        case (coordinate, risk) => repeat(coordinate, input.length, risk)
+      }
 
-    val destination = cave.foldLeft(Coordinate(0, 0)) { case (cord, (current, _)) => Coordinate(math.max(cord.x, current.x), math.max(cord.y, current.y))}
+    val destination = repeated.foldLeft(Coordinate(0, 0)) { case (cord, (current, _)) => Coordinate(math.max(cord.x, current.x), math.max(cord.y, current.y))}
 
-    deduce(cave, Map.empty, destination)(destination) - cave(Coordinate(0, 0))
+    deduce(repeated, Map.empty, destination)(destination) - repeated(Coordinate(0, 0))
   }
+
+  def repeat(coordinate: Coordinate, length: Int, risk: Int): Map[Coordinate, Int] =
+    Range(0, 5).flatMap { yOffset =>
+      Range(0, 5).map { xOffset =>
+          val currentRisk = (risk + xOffset + yOffset) % 9
+
+          Coordinate(coordinate.x + xOffset * length, coordinate.y + yOffset * length) -> (if (currentRisk == 0) 9 else currentRisk)
+      }
+    }
+      .toMap
 
   def parse(input: List[String]) =
     input.zipWithIndex
