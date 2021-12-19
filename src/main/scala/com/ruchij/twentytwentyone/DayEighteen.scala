@@ -16,22 +16,48 @@ object DayEighteen {
         extends SnailNumber {
       override def toString: String = s"[$left,$right]"
     }
+
+    def clone(snailNumber: SnailNumber): SnailNumber =
+      snailNumber match {
+        case SnailNumber.Regular(value, _) => SnailNumber.Regular(value, None)
+
+        case SnailNumber.Pair(left, right, _) =>
+          val leftClone = clone(left)
+          val rightClone = clone(right)
+
+          val result = SnailNumber.Pair(leftClone, rightClone, None)
+
+          leftClone.parent = Some(result)
+          rightClone.parent = Some(result)
+
+          result
+      }
   }
 
   def solve(input: List[String]) = {
-    val snailNumber =
-      input
-        .map(line => parse(line, None))
-        .reduce {
-          (x, y) =>
-            val pair = SnailNumber.Pair(x, y, None)
-            x.parent = Some(pair)
-            y.parent = Some(pair)
+    val snailNumbers = input.map(line => parse(line, None))
 
-            reduce(pair)
-        }
+    snailNumbers.zipWithIndex
+      .map {
+        case (x, i0) =>
+          snailNumbers
+            .zipWithIndex
+            .map { case (y, i1) =>
+              if (i0 == i1) 0 else {
+                val left = SnailNumber.clone(x)
+                val right = SnailNumber.clone(y)
 
-    magnitude(snailNumber)
+                val value = SnailNumber.Pair(left, right, None)
+
+                left.parent = Some(value)
+                right.parent = Some(value)
+
+                magnitude(reduce(value))
+              }
+            }
+            .max
+      }
+      .max
   }
 
   def reduce(snailNumber: SnailNumber): SnailNumber =
