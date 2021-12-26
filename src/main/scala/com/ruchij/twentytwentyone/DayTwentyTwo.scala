@@ -17,7 +17,7 @@ object DayTwentyTwo {
   def solve(input: List[String]) = {
     val data = input.map(parseLine)
 
-    val result = run(Map.empty, data)
+    val result = run(Map.empty, data, 0, data.size)
 
     result
       .count {
@@ -25,7 +25,7 @@ object DayTwentyTwo {
       }
   }
 
-  def run(map: Map[Coordinate, CubeStatus], instructions: List[Instruction]): Map[Coordinate, CubeStatus] =
+  def run(map: Map[Coordinate, CubeStatus], instructions: List[Instruction], count: Int, total: Int): Map[Coordinate, CubeStatus] =
     instructions match {
       case Nil => map
 
@@ -36,7 +36,9 @@ object DayTwentyTwo {
               (acc, coordinate) => acc.updated(coordinate, cubeStatus)
             }
 
-        run(updated, tail)
+        println(s"Completed: $count/$total")
+
+        run(updated, tail, count + 1, total)
     }
 
   def coordinateSet(rangeX: Range, rangeY: Range, rangeZ: Range): IndexedSeq[Coordinate] =
