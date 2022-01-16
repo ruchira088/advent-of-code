@@ -1,8 +1,8 @@
 package com.ruchij
 
-import cats.effect.{ExitCode, IO, IOApp, Sync}
+import cats.effect.{ExitCode, IO, Sync}
 import cats.implicits._
-import com.ruchij.twentytwentyone.{DayTwentyFive, DayTwentyFour, DayTwentyThree}
+import com.ruchij.twentytwentyone.DayTwentyFive
 import fs2.Stream
 import fs2.io.file.{Files, Path}
 import fs2.text.lines
@@ -10,9 +10,9 @@ import fs2.text.utf8.decode
 
 import java.nio.file.Paths
 
-object App extends IOApp
+object App //extends IOApp
 {
-  override def run(args: List[String]): IO[ExitCode] =
+  def run(args: List[String]): IO[ExitCode] =
     solve[IO]
       .flatMap(result => IO.blocking(println(result)))
       .as(ExitCode.Success)
