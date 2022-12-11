@@ -2,34 +2,35 @@ package com.ruchij.twentytwentytwo;
 
 import com.ruchij.JavaSolution;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class DayThree implements JavaSolution {
-    record Rucksack(List<Character> items, int size) {
-        List<Character> one() {
-            return items.subList(0, size / 2);
-        }
-
-        List<Character> two() {
-            return items.subList(size / 2, size);
-        }
-
+    record Group(List<Rucksack> rucksacks) {
         Set<Character> common() {
-            Set<Character> two = Set.copyOf(two());
-            Set<Character> result = new HashSet<>();
+            Set<Character> characters = null;
 
-            for (Character character : one()) {
-                if (two.contains(character)) {
-                    result.add(character);
+            for (Rucksack rucksack: rucksacks) {
+                if (characters == null) {
+                    characters = rucksack.items;
+                } else {
+                    Set<Character> updated = new HashSet<>();
+
+                    for (Character character : characters) {
+                        if (rucksack.items.contains(character)) {
+                            updated.add(character);
+                        }
+                    }
+
+                    characters = updated;
                 }
             }
 
-            return result;
+            return characters;
         }
+    }
+
+    record Rucksack(Set<Character> items) {
     }
 
     private int priority(char character) {
@@ -43,14 +44,25 @@ public class DayThree implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         Iterator<String> iterator = input.iterator();
+        List<Group> groups = new ArrayList<>();
+
+        int groupSize = 3;
         long total = 0;
 
         while (iterator.hasNext()) {
-            String line = iterator.next();
+            List<Rucksack> rucksacks = new ArrayList<>();
 
-            Rucksack rucksack = parse(line);
+            for (int i = 0; i < groupSize; i++) {
+                String line = iterator.next();
+                Rucksack rucksack = parseRucksack(line);
+                rucksacks.add(rucksack);
+            }
 
-            for (Character character : rucksack.common()) {
+            groups.add(new Group(rucksacks));
+        }
+
+        for (Group group : groups) {
+            for (Character character : group.common()) {
                 total += priority(character);
             }
         }
@@ -58,11 +70,14 @@ public class DayThree implements JavaSolution {
         return total;
     }
 
-    Rucksack parse(String line) {
-        List<Character> characters = line.trim().chars()
-                .mapToObj(character -> Character.valueOf((char) character))
-                .toList();
+    Rucksack parseRucksack(String line) {
+        HashSet<Character> items = new HashSet<>();
 
-        return new Rucksack(characters, characters.size());
+        for (char character : line.toCharArray()) {
+            items.add(character);
+        }
+
+
+        return new Rucksack(items);
     }
 }
