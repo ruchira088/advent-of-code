@@ -1,6 +1,6 @@
 package com.ruchij
 
-import cats.effect.{ExitCode, IO, Sync}
+import cats.effect.{ExitCode, IO, IOApp, Sync}
 import cats.implicits._
 import com.ruchij.twentytwentyone.DayTwentyFive
 import fs2.Stream
@@ -10,8 +10,7 @@ import fs2.text.utf8.decode
 
 import java.nio.file.Paths
 
-object App //extends IOApp
-{
+object App extends IOApp {
   def run(args: List[String]): IO[ExitCode] =
     solve[IO]
       .flatMap(result => IO.blocking(println(result)))
@@ -25,11 +24,11 @@ object App //extends IOApp
 
       inputData <- input[F](path).compile.toList
       result = DayTwentyFive.solve(inputData)
-    }
-    yield result
+    } yield result
 
   def input[F[_]: Sync: Files](inputFile: Path): Stream[F, String] =
-    Files[F].readAll(inputFile)
+    Files[F]
+      .readAll(inputFile)
       .through(decode)
       .through(lines)
 

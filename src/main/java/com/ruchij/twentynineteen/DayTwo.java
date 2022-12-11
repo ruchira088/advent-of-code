@@ -15,7 +15,9 @@ public class DayTwo implements JavaSolution {
     }
 
     private Long[] parse(Stream<String> input) {
-        return input.flatMap(line -> Arrays.stream(line.split(","))).map(Long::getLong).toArray(Long[]::new);
+        return input.flatMap(
+                line -> Arrays.stream(line.split(","))
+        ).map(Long::parseLong).toArray(Long[]::new);
     }
 
 }
