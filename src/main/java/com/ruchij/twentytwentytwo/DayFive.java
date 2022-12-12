@@ -101,8 +101,14 @@ public class DayFive implements JavaSolution {
         Stack<Character> from = stacks.get(instruction.from - 1);
         Stack<Character> to = stacks.get(instruction.to - 1);
 
+        Stack<Character> stack = new Stack<>();
+
         for (int i = 0; i < instruction.itemCount; i++) {
-            to.push(from.pop());
+            stack.push(from.pop());
+        }
+
+        while (!stack.isEmpty()) {
+            to.push(stack.pop());
         }
     }
 }
