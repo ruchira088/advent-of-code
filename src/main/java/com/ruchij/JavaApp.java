@@ -1,6 +1,6 @@
 package com.ruchij;
 
-import com.ruchij.twentytwentytwo.DayFive;
+import com.ruchij.twentytwentytwo.DaySix;
 
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
@@ -11,8 +11,8 @@ import java.util.stream.Stream;
 
 public class JavaApp {
     public static void main(String[] args) throws FileNotFoundException {
-        Stream<String> fileContents = readFile(Paths.get("./input/2022/day-5.txt"));
-        Object result = new DayFive().solve(fileContents);
+        Stream<String> fileContents = readFile(Paths.get("./input/2022/day-6.txt"));
+        Object result = new DaySix().solve(fileContents);
 
         System.out.println(result);
     }
