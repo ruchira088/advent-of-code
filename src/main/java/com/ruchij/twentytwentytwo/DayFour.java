@@ -2,7 +2,6 @@ package com.ruchij.twentytwentytwo;
 
 import com.ruchij.JavaSolution;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
@@ -19,12 +18,12 @@ public class DayFour implements JavaSolution {
             return new Range(start, end);
         }
 
-        boolean contains(Range other) {
-            return compare(this, other) || compare(other, this);
+        boolean overlap(Range other) {
+            return contains(other.start) || contains(other.end);
         }
 
-        private static boolean compare(Range range, Range other) {
-            return range.start <= other.start && range.end >= other.end;
+        boolean contains(long value) {
+            return start <= value && end >= value;
         }
     }
 
@@ -33,7 +32,6 @@ public class DayFour implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         Iterator<String> iterator = input.iterator();
-        ArrayList<Pair<Range, Range>> elfPairs = new ArrayList<>();
         long count = 0;
 
         while (iterator.hasNext()) {
@@ -41,7 +39,7 @@ public class DayFour implements JavaSolution {
 
             Pair<Range, Range> pair = parse(line);
 
-            if (pair.first.contains(pair.second)) {
+            if (pair.first.overlap(pair.second) || pair.second.overlap(pair.first)) {
                 count++;
             }
 
