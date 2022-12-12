@@ -20,7 +20,7 @@ public class DaySix implements JavaSolution {
         for (int i = 0; i < chars.length; i++) {
             char character = chars[i];
 
-            if (i > 3) {
+            if (i >= 14) {
                 Character poll = queue.poll();
                 LinkedList<Integer> integers = characters.get(poll);
                 integers.removeFirst();
@@ -34,7 +34,7 @@ public class DaySix implements JavaSolution {
             List<Integer> integers = characters.computeIfAbsent(character, __ -> new LinkedList<>());
             integers.add(i);
 
-            if (characters.size() == 4) {
+            if (characters.size() == 14) {
                 return i + 1;
             }
         }
