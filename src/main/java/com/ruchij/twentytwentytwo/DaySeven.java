@@ -103,7 +103,36 @@ public class DaySeven implements JavaSolution {
         Item.Directory root = new Item.Directory(null, null, new HashMap<>());
         traverse(root, inputs);
 
-        return calculate(new HashSet<>(), root, 100_000, 0);
+        long total = 70_000_000;
+        long remainingSpace = total - root.getSize();
+
+        long update = 30_000_000;
+        long minimumRequired = update - remainingSpace;
+
+        return smallestDirectory(minimumRequired, root);
+    }
+
+    private Long smallestDirectory(long minimum, Item.Directory directory) {
+        long directorySize = directory.getSize();
+
+        if (directorySize < minimum) {
+            return null;
+        } else {
+            Long smallest = directorySize;
+
+            for (Item item : directory.items.values()) {
+                if (item instanceof Item.Directory dir) {
+                    Long smallestDirectory = smallestDirectory(minimum, dir);
+
+                    if (smallestDirectory != null && smallestDirectory < smallest) {
+                        smallest = smallestDirectory;
+                    }
+                }
+            }
+
+            return smallest;
+        }
+
     }
 
     long calculate(Set<Item.Directory> directories, Item.Directory directory, long max, long size) {
