@@ -15,7 +15,7 @@ public class DayEight implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         int[][] trees = parse(input);
-        return visibleTrees(trees).size();
+        return maxScenicScore(trees);
     }
 
     Set<Coordinate> visibleTrees(int[][] trees) {
@@ -106,8 +106,62 @@ public class DayEight implements JavaSolution {
                 }
             }
         }
+    }
 
+    long maxScenicScore(int[][] trees) {
+        int rows = trees.length;
+        int columns = trees[0].length;
+        long maxScore = -1;
 
+        for (int y = 1; y < rows - 1; y++) {
+            for (int x = 1; x < columns - 1; x++) {
+                maxScore = Math.max(scenicScore(trees, new Coordinate(x, y), rows, columns), maxScore);
+            }
+        }
+
+        return maxScore;
+    }
+
+    long scenicScore(int[][] trees, Coordinate coordinate, int rows, int columns) {
+        long scenicScore = 1;
+
+        Set<Function<Coordinate, Coordinate>> fns =
+                Set.of(
+                        value -> new Coordinate(value.x + 1, value.y),
+                        value -> new Coordinate(value.x - 1, value.y),
+                        value -> new Coordinate(value.x, value.y + 1),
+                        value -> new Coordinate(value.x, value.y - 1)
+                );
+
+        for (Function<Coordinate, Coordinate> fn : fns) {
+            scenicScore *= viewableTress(trees, coordinate, fn, rows, columns);
+
+            if (scenicScore == 0) {
+                return 0;
+            }
+        }
+
+        return scenicScore;
+    }
+
+    int viewableTress(int[][] trees, Coordinate coordinate, Function<Coordinate, Coordinate> next, int rows, int columns) {
+        int treeHeight = trees[coordinate.y][coordinate.x];
+        int viewableTress = 0;
+
+        while (true) {
+            coordinate = next.apply(coordinate);
+
+            if (isValid(coordinate, rows, columns)) {
+                int height = trees[coordinate.y][coordinate.x];
+                viewableTress++;
+
+                if (height >= treeHeight) {
+                    return viewableTress;
+                }
+            } else {
+                return viewableTress;
+            }
+        }
     }
 
     Coordinate next(Coordinate current, Function<Coordinate, Coordinate> small, Function<Coordinate, Coordinate> big, Consumer<Coordinate> onBig, int rows, int columns) {
