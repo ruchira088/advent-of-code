@@ -46,20 +46,30 @@ public class DayNine implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
+        int knotCount = 10;
         List<Instruction> instructions = parse(input);
 
-        Coordinate head = new Coordinate(0, 0);
-        Coordinate tail = new Coordinate(0, 0);
+        ArrayList<Coordinate> knots = new ArrayList<>();
+
+        for (int i = 0; i < knotCount; i++) {
+            knots.add(new Coordinate(0, 0));
+        }
 
         HashSet<Coordinate> visited = new HashSet<>();
-        visited.add(tail);
+        visited.add(knots.get(knotCount - 1));
 
         for (Instruction instruction : instructions) {
             for (int i = 0; i < instruction.steps; i++) {
-                head = next(head, instruction.direction);
+                knots.set(0, next(knots.get(0), instruction.direction));
 
-                tail = tailMove(head, tail);
-                visited.add(tail);
+                for (int j = 0; j < knotCount - 1; j++) {
+                    Coordinate head = knots.get(j);
+                    Coordinate tail = knots.get(j + 1);
+
+                    knots.set(j + 1, tailMove(head, tail));
+                }
+
+                visited.add(knots.get(knotCount - 1));
             }
         }
 
@@ -75,7 +85,7 @@ public class DayNine implements JavaSolution {
 
         if (xOffsetAbs <= 1 && yOffsetAbs <= 1) {
             return tail;
-        } else if (xOffsetAbs >= 1 && yOffsetAbs >= 1 && (xOffsetAbs + yOffsetAbs == 3)) {
+        } else if (xOffsetAbs >= 1 && yOffsetAbs >= 1 && (xOffsetAbs + yOffsetAbs >= 3)) {
             return new Coordinate(tail.x + (xOffset > 0 ? 1 : -1), tail.y + (yOffset > 0 ? 1 : -1));
         } else if (xOffsetAbs == 2) {
             return new Coordinate(tail.x + (xOffset > 0 ? 1 : -1), tail.y);
