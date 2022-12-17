@@ -53,22 +53,22 @@ public class DayTen implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         List<Instruction> instructions = parse(input);
-        List<Long> values = new ArrayList<>();
+        List<Boolean> pixels = new ArrayList<>();
 
         long cycle = 1;
         long registerValue = 1;
+        long pixel = 0;
 
         for (Instruction instruction : instructions) {
             long start = cycle;
+            long end = start + instruction.cycles();
+            long endPixel = pixel + instruction.cycles();
 
-            long end = cycle + instruction.cycles();
-
-            long current = registerValue;
-
-            range(start, end).stream()
-                    .filter(number -> Set.of(20L, 60L, 100L, 140L, 180L, 220L).contains(number))
-                    .findFirst()
-                    .ifPresent(cycleNumber -> values.add(cycleNumber * current));
+            for (long i = pixel; i < endPixel; i++) {
+                boolean isLit = Set.of(registerValue - 1, registerValue, registerValue + 1).contains(pixel % 40);
+                pixels.add(isLit);
+                pixel++;
+            }
 
             if (instruction instanceof Instruction.Add add) {
                 registerValue = registerValue + add.value;
@@ -77,7 +77,30 @@ public class DayTen implements JavaSolution {
             cycle = end;
         }
 
-        return values.stream().mapToLong(x -> x).sum();
+        screen(pixels);
+
+        return "";
+    }
+
+    void screen(List<Boolean> pixels) {
+        int index = 0;
+        int size = pixels.size();
+
+        for (int y = 0; y < 6; y++) {
+            for (int x = 0; x < 40; x++) {
+                if (size <= index) {
+                    System.out.print('O');
+                } else if (pixels.get(index)) {
+                    System.out.print('#');
+                } else {
+                    System.out.print('.');
+                }
+
+                index++;
+            }
+
+            System.out.println();
+        }
     }
 
     List<Instruction> parse(Stream<String> input) {
