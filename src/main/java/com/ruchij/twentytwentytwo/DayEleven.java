@@ -11,17 +11,17 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DayEleven implements JavaSolution {
-    record NextThrow(long mod, long divisible, long notDivisible) {
+    record NextThrow(int mod, int divisible, int notDivisible) {
     }
 
-    record Monkey(long id, List<Long> startingItems, Function<Long, Long> operation, NextThrow nextThrow) {
+    record Monkey(int id, List<Integer> startingItems, Function<Long, Long> operation, NextThrow nextThrow) {
     }
 
     @Override
     public Object solve(Stream<String> input) {
         List<Monkey> monkeys = parse(input);
-        Map<Long, Long> inspectionCount = new HashMap<>();
-        Map<Long, Monkey> monkeyGroup = new HashMap<>();
+        Map<Integer, Integer> inspectionCount = new HashMap<>();
+        Map<Integer, Monkey> monkeyGroup = new HashMap<>();
         int factor = 1;
 
         for (Monkey monkey : monkeys) {
@@ -35,10 +35,10 @@ public class DayEleven implements JavaSolution {
             }
         }
 
-        List<Long> itemInspections = new ArrayList<>(inspectionCount.values());
+        List<Integer> itemInspections = new ArrayList<>(inspectionCount.values());
         Collections.sort(itemInspections, Comparator.reverseOrder());
 
-        return itemInspections.get(0) * itemInspections.get(1);
+        return itemInspections.get(0).longValue() * itemInspections.get(1).longValue();
     }
 
     void printMonkeys(List<Monkey> monkeys) {
@@ -47,18 +47,18 @@ public class DayEleven implements JavaSolution {
         }
     }
 
-    void inspect(Monkey monkey, Map<Long, Monkey> monkeyGroup, Map<Long, Long> inspectionCount, long factor) {
-        for (Long item : new ArrayList<>(monkey.startingItems)) {
-            Long worryLevel = monkey.operation.apply(item);
+    void inspect(Monkey monkey, Map<Integer, Monkey> monkeyGroup, Map<Integer, Integer> inspectionCount, int factor) {
+        for (Integer item : new ArrayList<>(monkey.startingItems)) {
+            long worryLevel = monkey.operation.apply(item.longValue()) % factor;
 
-            inspectionCount.put(monkey.id, inspectionCount.getOrDefault(monkey.id, 0L) + 1);
+            inspectionCount.put(monkey.id, inspectionCount.getOrDefault(monkey.id, 0) + 1);
 
             monkey.startingItems.remove(item);
 
             if (worryLevel % monkey.nextThrow.mod == 0) {
-                monkeyGroup.get(monkey.nextThrow.divisible).startingItems().add(worryLevel % factor);
+                monkeyGroup.get(monkey.nextThrow.divisible).startingItems().add((int) worryLevel);
             } else {
-                monkeyGroup.get(monkey.nextThrow.notDivisible).startingItems().add(worryLevel % factor);
+                monkeyGroup.get(monkey.nextThrow.notDivisible).startingItems().add((int) worryLevel);
             }
         }
     }
@@ -93,9 +93,9 @@ public class DayEleven implements JavaSolution {
 
         Matcher startingItemsMatcher = Pattern.compile("Starting items: (.*)").matcher(lines.get(1).trim());
         startingItemsMatcher.find();
-        List<Long> itemsList = Arrays.stream(startingItemsMatcher.group(1).split(","))
+        List<Integer> itemsList = Arrays.stream(startingItemsMatcher.group(1).split(","))
                 .filter(word -> !word.isEmpty())
-                .map(item -> Long.parseLong(item.trim()))
+                .map(item -> Integer.parseInt(item.trim()))
                 .toList();
 
         Matcher operationMatcher = Pattern.compile("Operation: new = (\\S+) (\\S+) (\\S+)").matcher(lines.get(2).trim());
@@ -103,7 +103,7 @@ public class DayEleven implements JavaSolution {
 
         String first = operationMatcher.group(1).trim();
         Function<Long, Long> firstTerm =
-                first.equalsIgnoreCase("old") ? x -> x : x -> Long.parseLong(first);
+                first.equalsIgnoreCase("old") ? x -> x : x -> (long) Integer.parseInt(first);
 
         String operator = operationMatcher.group(2).trim();
         BiFunction<Long, Long, Long> operationFunction =
@@ -111,7 +111,7 @@ public class DayEleven implements JavaSolution {
 
         String second = operationMatcher.group(3).trim();
         Function<Long, Long> secondTerm =
-                second.equalsIgnoreCase("old") ? x -> x : x -> Long.parseLong(second);
+                second.equalsIgnoreCase("old") ? x -> x : x -> (long) Integer.parseInt(second);
 
         Function<Long, Long> operation =
                 old -> operationFunction.apply(firstTerm.apply(old), secondTerm.apply(old));
