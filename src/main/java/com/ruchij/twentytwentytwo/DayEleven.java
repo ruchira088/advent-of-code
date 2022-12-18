@@ -11,29 +11,31 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DayEleven implements JavaSolution {
-    record NextThrow(int mod, int divisible, int notDivisible) {
+    record NextThrow(long mod, long divisible, long notDivisible) {
     }
 
-    record Monkey(int id, List<Integer> startingItems, Function<Integer, Integer> operation, NextThrow nextThrow) {
+    record Monkey(long id, List<Long> startingItems, Function<Long, Long> operation, NextThrow nextThrow) {
     }
 
     @Override
     public Object solve(Stream<String> input) {
         List<Monkey> monkeys = parse(input);
-        Map<Integer, Integer> inspectionCount = new HashMap<>();
-        Map<Integer, Monkey> monkeyGroup = new HashMap<>();
+        Map<Long, Long> inspectionCount = new HashMap<>();
+        Map<Long, Monkey> monkeyGroup = new HashMap<>();
+        int factor = 1;
 
         for (Monkey monkey : monkeys) {
             monkeyGroup.put(monkey.id, monkey);
+            factor *= monkey.nextThrow.mod;
         }
 
-        for (int i = 0; i < 20; i++) {
+        for (int i = 0; i < 10000; i++) {
             for (Monkey monkey : monkeys) {
-                inspect(monkey, monkeyGroup, inspectionCount);
+                inspect(monkey, monkeyGroup, inspectionCount, factor);
             }
         }
 
-        List<Integer> itemInspections = new ArrayList<>(inspectionCount.values());
+        List<Long> itemInspections = new ArrayList<>(inspectionCount.values());
         Collections.sort(itemInspections, Comparator.reverseOrder());
 
         return itemInspections.get(0) * itemInspections.get(1);
@@ -45,18 +47,18 @@ public class DayEleven implements JavaSolution {
         }
     }
 
-    void inspect(Monkey monkey, Map<Integer, Monkey> monkeyGroup, Map<Integer, Integer> inspectionCount) {
-        for (Integer item : new ArrayList<>(monkey.startingItems)) {
-            Integer worryLevel = monkey.operation.apply(item) / 3;
+    void inspect(Monkey monkey, Map<Long, Monkey> monkeyGroup, Map<Long, Long> inspectionCount, long factor) {
+        for (Long item : new ArrayList<>(monkey.startingItems)) {
+            Long worryLevel = monkey.operation.apply(item);
 
-            inspectionCount.put(monkey.id, inspectionCount.getOrDefault(monkey.id, 0) + 1);
+            inspectionCount.put(monkey.id, inspectionCount.getOrDefault(monkey.id, 0L) + 1);
 
             monkey.startingItems.remove(item);
 
             if (worryLevel % monkey.nextThrow.mod == 0) {
-                monkeyGroup.get(monkey.nextThrow.divisible).startingItems().add(worryLevel);
+                monkeyGroup.get(monkey.nextThrow.divisible).startingItems().add(worryLevel % factor);
             } else {
-                monkeyGroup.get(monkey.nextThrow.notDivisible).startingItems().add(worryLevel);
+                monkeyGroup.get(monkey.nextThrow.notDivisible).startingItems().add(worryLevel % factor);
             }
         }
     }
@@ -91,27 +93,27 @@ public class DayEleven implements JavaSolution {
 
         Matcher startingItemsMatcher = Pattern.compile("Starting items: (.*)").matcher(lines.get(1).trim());
         startingItemsMatcher.find();
-        List<Integer> itemsList = Arrays.stream(startingItemsMatcher.group(1).split(","))
+        List<Long> itemsList = Arrays.stream(startingItemsMatcher.group(1).split(","))
                 .filter(word -> !word.isEmpty())
-                .map(item -> Integer.parseInt(item.trim()))
+                .map(item -> Long.parseLong(item.trim()))
                 .toList();
 
         Matcher operationMatcher = Pattern.compile("Operation: new = (\\S+) (\\S+) (\\S+)").matcher(lines.get(2).trim());
         operationMatcher.find();
 
         String first = operationMatcher.group(1).trim();
-        Function<Integer, Integer> firstTerm =
-                first.equalsIgnoreCase("old") ? x -> x : x -> Integer.parseInt(first);
+        Function<Long, Long> firstTerm =
+                first.equalsIgnoreCase("old") ? x -> x : x -> Long.parseLong(first);
 
         String operator = operationMatcher.group(2).trim();
-        BiFunction<Integer, Integer, Integer> operationFunction =
+        BiFunction<Long, Long, Long> operationFunction =
                 operator.equalsIgnoreCase("*") ? (x, y) -> x * y : (x, y) -> x + y;
 
         String second = operationMatcher.group(3).trim();
-        Function<Integer, Integer> secondTerm =
-                second.equalsIgnoreCase("old") ? x -> x : x -> Integer.parseInt(second);
+        Function<Long, Long> secondTerm =
+                second.equalsIgnoreCase("old") ? x -> x : x -> Long.parseLong(second);
 
-        Function<Integer, Integer> operation =
+        Function<Long, Long> operation =
                 old -> operationFunction.apply(firstTerm.apply(old), secondTerm.apply(old));
 
         Matcher divisibleMatcher = Pattern.compile("Test: divisible by (\\d+)").matcher(lines.get(3).trim());
