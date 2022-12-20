@@ -22,7 +22,10 @@ public class DayTwelve implements JavaSolution {
         int columns = game.grid[0].length;
 
         ArrayDeque<Entry> arrayDeque = new ArrayDeque<>();
-        arrayDeque.add(new Entry(game.start, 0));
+
+        for (Coordinate coordinate : startingPoints(game.grid, rows, columns)) {
+            arrayDeque.add(new Entry(coordinate, 0));
+        }
 
         HashSet<Coordinate> visited = new HashSet<>();
 
@@ -45,6 +48,20 @@ public class DayTwelve implements JavaSolution {
         }
 
         throw new IllegalStateException("Unable to find step count");
+    }
+
+    Set<Coordinate> startingPoints(int[][] grid, int rows, int columns) {
+        HashSet<Coordinate> coordinates = new HashSet<>();
+
+        for (int y = 0; y < rows; y++) {
+            for (int x = 0; x < columns; x++) {
+                if (grid[y][x] == 1) {
+                    coordinates.add(new Coordinate(x, y));
+                }
+            }
+        }
+
+        return coordinates;
     }
 
     Set<Coordinate> possibleMoves(int[][] grid, Coordinate coordinate, int rows, int columns) {
