@@ -26,43 +26,29 @@ public class DayThirteen implements JavaSolution {
     record PacketPair(Packet first, Packet second) {
     }
 
-    record ParseResult(Packet packet, int index) {
-    }
 
     @Override
     public Object solve(Stream<String> input) {
-        List<PacketPair> packetPairs = parse(input);
-        int result = 0;
+        List<Packet> packetList = parse(input);
 
-        for (int i = 0; i < packetPairs.size(); i++) {
-            if (isOrdered(packetPairs.get(i))) {
-                result += (i + 1);
-            }
-        }
+        packetList.sort((o1, o2) -> -isOrdered(o1, o2));
 
-        return result;
+        return (packetList.indexOf(parse("[[2]]")) + 1) * (packetList.indexOf(parse("[[6]]")) + 1);
     }
 
-    List<PacketPair> parse(Stream<String> input) {
-        List<PacketPair> packetPairs = new ArrayList<>();
+    List<Packet> parse(Stream<String> input) {
+        List<Packet> packets = new ArrayList<>();
         Iterator<String> iterator = input.iterator();
-        ArrayDeque<Packet> arrayDeque = new ArrayDeque<>();
 
         while (iterator.hasNext()) {
             String line = iterator.next();
 
-            if (line.isEmpty()) {
-                packetPairs.add(new PacketPair(arrayDeque.removeFirst(), arrayDeque.removeFirst()));
-            } else {
-                arrayDeque.add(parse(line));
+            if (!line.isEmpty()) {
+                packets.add(parse(line));
             }
         }
 
-        if (!arrayDeque.isEmpty()) {
-            packetPairs.add(new PacketPair(arrayDeque.removeFirst(), arrayDeque.removeFirst()));
-        }
-
-        return packetPairs;
+        return packets;
     }
 
     Packet parse(String term) {
