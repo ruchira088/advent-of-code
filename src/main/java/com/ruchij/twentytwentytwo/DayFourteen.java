@@ -15,23 +15,24 @@ public class DayFourteen implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
+        Coordinate sandPouringPoint = new Coordinate(500, 0);
         List<List<Coordinate>> rocks = parse(input);
         Map<Coordinate, Content> cave = cave(rocks);
-        int floor = bottom(cave);
+        Coordinate rested = null;
+        int floor = bottom(cave) + 2;
         int pours = 0;
-        boolean complete = false;
 
-        while (!complete) {
+        while (rested == null || !rested.equals(sandPouringPoint)) {
             pours++;
-            complete = pourSand(cave, new Coordinate(500, 0), floor);
+            rested = pourSand(cave, sandPouringPoint, floor);
         }
 
-        return pours - 1;
+        return pours;
     }
 
-    boolean pourSand(Map<Coordinate, Content> cave, Coordinate sand, int floor) {
-        if (sand.y > floor) {
-            return true;
+    Coordinate pourSand(Map<Coordinate, Content> cave, Coordinate sand, int floor) {
+        if (sand.y + 1 == floor) {
+            return sand;
         }
 
         Coordinate nextMove = null;
@@ -54,7 +55,7 @@ public class DayFourteen implements JavaSolution {
             return pourSand(cave, nextMove, floor);
         }
 
-        return false;
+        return sand;
     }
 
     int bottom(Map<Coordinate, Content> cave) {
