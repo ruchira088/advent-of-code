@@ -2,10 +2,11 @@ package com.ruchij.twentytwentytwo;
 
 import com.ruchij.JavaSolution;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class DayFifteen implements JavaSolution {
@@ -17,34 +18,45 @@ public class DayFifteen implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
+        long length = 4_000_000;
         List<Position> positions = parse(input);
-        Set<Coordinate> beacons =
-                positions.stream().map(Position::closestBeacon).collect(Collectors.toSet());
         Map<Coordinate, Long> distances = distances(positions);
 
-        Set<Coordinate> coordinateSet = impossible(distances, 2_000_000);
+        long y = 0;
 
-        return coordinateSet.stream().filter(coordinate -> !beacons.contains(coordinate)).count();
+        while (y <= length) {
+            long x = 0;
+
+            while (x <= length) {
+                Coordinate current = new Coordinate(x, y);
+                Coordinate next = next(current, distances);
+
+                if (next == null) {
+                    return 4_000_000 * current.x + current.y;
+                } else {
+                    x = next.x;
+                }
+            }
+            y++;
+        }
+
+        return null;
     }
 
-    Set<Coordinate> impossible(Map<Coordinate, Long> distances, long yAxis) {
-        HashSet<Coordinate> coordinates = new HashSet<>();
-
+    Coordinate next(Coordinate coordinate, Map<Coordinate, Long> distances) {
         for (Map.Entry<Coordinate, Long> entry : distances.entrySet()) {
-            if (entry.getKey().y == yAxis || (entry.getKey().y > yAxis && entry.getKey().y - entry.getValue() < yAxis) ||
-                    (entry.getKey().y < yAxis && entry.getKey().y + entry.getValue() > yAxis)) {
-                for (
-                        int i = 0;
-                        manhattanDistance(entry.getKey(), new Coordinate(entry.getKey().x + i, yAxis))
-                                <= entry.getValue();
-                        i++) {
-                    coordinates.add(new Coordinate(entry.getKey().x + i, yAxis));
-                    coordinates.add(new Coordinate(entry.getKey().x - i, yAxis));
-                }
+            Coordinate sensor = entry.getKey();
+            long modulus = entry.getValue();
+
+            long distance = manhattanDistance(coordinate, sensor);
+
+            if (distance <= modulus) {
+                long x = sensor.x + modulus - Math.abs(sensor.y - coordinate.y);
+                return new Coordinate(x + 1, coordinate.y);
             }
         }
 
-        return coordinates;
+        return null;
     }
 
     Map<Coordinate, Long> distances(List<Position> positions) {
