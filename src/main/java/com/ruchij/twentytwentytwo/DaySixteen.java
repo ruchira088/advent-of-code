@@ -43,78 +43,46 @@ public class DaySixteen implements JavaSolution {
 
             if (max < entry.pressure) {
                 max = entry.pressure;
-                System.out.println(max);
+                System.out.println("Max = %s".formatted(max));
             }
-
 
             if (!visited.contains(visit)) {
                 visited.add(visit);
 
-                if (entry.myTimestamp > 1 || entry.elephantTimestamp > 1) {
-                    boolean shouldOpenMyValve = myValve.flowRate > 0 && entry.myTimestamp > 1 && !entry.openedValves.contains(myValve.id);
-                    boolean shouldOpenElephantValve = elephantValve.flowRate > 0 && entry.elephantTimestamp > 1 && !entry.openedValves.contains(elephantValve.id);
+                if (entry.myTimestamp > 1) {
+                    boolean shouldOpenMyValve = myValve.flowRate != 0 && !entry.openedValves.contains(myValve.id);
 
                     for (String myNext : myValve.connections) {
-                        for (String elephantNext : elephantValve.connections) {
-                            if (entry.myTimestamp > 1 && entry.elephantTimestamp > 1) {
-                                Entry next = new Entry(myNext, elephantNext, entry.openedValves, entry.myTimestamp - 1, entry.elephantTimestamp - 1, entry.pressure);
-                                entries.add(next);
+                        Entry next = new Entry(myNext, elephantValve.id, entry.openedValves, entry.myTimestamp - 1, entry.elephantTimestamp, entry.pressure);
+                        entries.add(next);
 
-                                if (shouldOpenElephantValve && shouldOpenMyValve && !myValve.id.equals(elephantValve.id)) {
-                                    HashSet<String> openedValves = new HashSet<>(entry.openedValves);
-                                    openedValves.add(myValve.id);
-                                    openedValves.add(elephantValve.id);
+                        if (shouldOpenMyValve) {
+                            HashSet<String> openedValves = new HashSet<>(entry.openedValves);
+                            openedValves.add(myValve.id);
 
-                                    Entry nextEntry = new Entry(myNext, elephantNext, openedValves, entry.myTimestamp - 2, entry.elephantTimestamp - 2, entry.pressure + (entry.myTimestamp - 1) * myValve.flowRate + (entry.elephantTimestamp - 1) * elephantValve.flowRate);
-                                    entries.add(nextEntry);
-                                }
+                            Entry openingValve = new Entry(myNext, elephantValve.id, openedValves, entry.myTimestamp - 2, entry.elephantTimestamp, entry.pressure + (entry.myTimestamp - 1) * myValve.flowRate);
+                            entries.add(openingValve);
+                        }
+                    }
+                }
 
-                                if (shouldOpenMyValve) {
-                                    HashSet<String> openedValves = new HashSet<>(entry.openedValves);
-                                    openedValves.add(myValve.id);
+                if (entry.elephantTimestamp > 1) {
+                    boolean shouldOpenElephantValve = elephantValve.flowRate != 0 && !entry.openedValves.contains(elephantValve.id);
+                    for (String elephantNext : elephantValve.connections) {
+                        Entry next = new Entry(myValve.id, elephantNext, entry.openedValves, entry.myTimestamp, entry.elephantTimestamp - 1, entry.pressure);
+                        entries.add(next);
 
-                                    Entry nextEntry = new Entry(myNext, elephantNext, openedValves, entry.myTimestamp - 2, entry.elephantTimestamp - 1, entry.pressure + (entry.myTimestamp - 1) * myValve.flowRate);
-                                    entries.add(nextEntry);
-                                }
+                        if (shouldOpenElephantValve) {
+                            HashSet<String> openedValves = new HashSet<>(entry.openedValves);
+                            openedValves.add(elephantValve.id);
 
-                                if (shouldOpenElephantValve) {
-                                    HashSet<String> openedValves = new HashSet<>(entry.openedValves);
-                                    openedValves.add(elephantValve.id);
-
-                                    Entry nextEntry = new Entry(myNext, elephantNext, openedValves, entry.myTimestamp - 1, entry.elephantTimestamp - 2, entry.pressure + (entry.elephantTimestamp - 1) * elephantValve.flowRate);
-                                    entries.add(nextEntry);
-                                }
-                            } else if (entry.myTimestamp > 1) {
-                                Entry next = new Entry(myNext, elephantValve.id, entry.openedValves, entry.myTimestamp - 1, entry.elephantTimestamp, entry.pressure);
-                                entries.add(next);
-
-                                if (shouldOpenMyValve) {
-                                    HashSet<String> openedValves = new HashSet<>(entry.openedValves);
-                                    openedValves.add(myValve.id);
-
-                                    Entry openingValve = new Entry(myNext, elephantValve.id, openedValves, entry.myTimestamp - 2, entry.elephantTimestamp, entry.pressure + (entry.myTimestamp - 1) * myValve.flowRate);
-                                    entries.add(openingValve);
-                                }
-                            } else {
-                                Entry next = new Entry(myValve.id, elephantNext, entry.openedValves, entry.myTimestamp, entry.elephantTimestamp - 1, entry.pressure);
-                                entries.add(next);
-
-                                if (shouldOpenElephantValve) {
-                                    HashSet<String> openedValves = new HashSet<>(entry.openedValves);
-                                    openedValves.add(elephantValve.id);
-
-                                    Entry openingValve = new Entry(myValve.id, elephantNext, openedValves, entry.myTimestamp, entry.elephantTimestamp - 2, entry.pressure + (entry.elephantTimestamp - 1) * elephantValve.flowRate);
-                                    entries.add(openingValve);
-                                }
-                            }
+                            Entry openingValve = new Entry(myValve.id, elephantNext, openedValves, entry.myTimestamp, entry.elephantTimestamp - 2, entry.pressure + (entry.elephantTimestamp - 1) * elephantValve.flowRate);
+                            entries.add(openingValve);
                         }
                     }
                 }
             }
         }
-
-        // AA -> DD -> CC -> BB -> AA -> II -> JJ -> II -> AA -> DD -> EE -> FF -> GG -> HH -> GG -> FF -> EE -> DD -> CC
-        // 1651
 
         System.out.println("Duration: %sms".formatted(Instant.now().toEpochMilli() - start.toEpochMilli()));
 
