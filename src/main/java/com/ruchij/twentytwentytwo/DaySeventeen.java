@@ -2,11 +2,19 @@ package com.ruchij.twentytwentytwo;
 
 import com.ruchij.JavaSolution;
 
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Stream;
 
 public class DaySeventeen implements JavaSolution {
     record Coordinate(int x, int y) {
+    }
+
+    record Pair(int rock, int height) {
+        @Override
+        public String toString() {
+            return rock + "->" + height;
+        }
     }
 
     class Chamber {
@@ -42,10 +50,10 @@ public class DaySeventeen implements JavaSolution {
                     "highest=" + highest + ']';
         }
 
-        public String print() {
+        public String print(int rows) {
             StringBuilder stringBuilder = new StringBuilder();
 
-            for (int y = highest; y > 0; y--) {
+            for (int y = highest; y > 0 && y > highest - rows; y--) {
                 for (int x = 1; x < 8; x++) {
                     if (grid.contains(new Coordinate(x, y))) {
                         stringBuilder.append("#");
@@ -93,18 +101,55 @@ public class DaySeventeen implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
+        Instant startTime = Instant.now();
         Direction[] directions = parse(input).toArray(new Direction[]{});
 
+        Map<Integer, Map<Shape, List<Pair>>> state = new HashMap<>();
         Chamber chamber = new Chamber(new HashSet<>());
         Shape shape = Shape.MINUS;
         int index = 0;
+        long limit = 1_000_000_000_000L;
 
-        for (int i = 0; i < 2022; i++) {
+        System.out.println("Direction count: %s".formatted(directions.length));
+
+        for (int i = 0; i < directions.length * 5; i++) {
+            Map<Shape, List<Pair>> indexMapping = state.getOrDefault(index, new HashMap<>());
+            List<Pair> chambers = indexMapping.getOrDefault(shape, new ArrayList<>());
+            chambers.add(new Pair(i, chamber.highest));
+
+            indexMapping.put(shape, chambers);
+            state.put(index, indexMapping);
+
             index = move(chamber, directions, index, shape);
             shape = shape.next();
         }
 
-        return chamber.highest;
+        List<Pair> pairs = state.values().stream()
+                .flatMap(map -> map.values().stream())
+                .filter(strings -> strings.size() > 1)
+                .flatMap(Collection::stream)
+                .toList();
+
+        var first = pairs.get(0);
+        var second = pairs.get(1);
+
+        var start = pairs.stream().min(Comparator.comparing(Pair::rock)).orElseThrow();
+
+        var interval = second.rock - first.rock;
+        var intervalHeight = second.height - first.height;
+
+        var periods = (limit - start.rock) / interval;
+        var remaining = limit - periods * interval - start.rock;
+
+        Optional<Pair> rem = pairs.stream()
+                .filter(pair -> pair.rock == start.rock + remaining)
+                .findFirst();
+
+        System.out.println("Start: %s, Interval: %s, Height: %s".formatted(start, interval, intervalHeight));
+
+        System.out.println("Total Duration: %sms".formatted(Instant.now().toEpochMilli() - startTime.toEpochMilli()));
+
+        return (long) rem.map(Pair::height).orElseThrow() + intervalHeight * periods;
     }
 
     Set<Coordinate> coordinates(Shape shape, Coordinate coordinate) {
