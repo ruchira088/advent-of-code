@@ -92,6 +92,15 @@ public class DayNineteen implements JavaSolution {
                     geode - resources.geode
             );
         }
+
+        Resources trim(Resources max) {
+            return new Resources(
+                    Math.min(ore, max.ore),
+                    Math.min(clay, max.clay),
+                    Math.min(obsidian, max.obsidian),
+                    Math.min(geode, max.geode)
+            );
+        }
     }
 
     record Robots(int oreRobot, int clayRobot, int obsidianRobot, int geodeRobot) {
@@ -113,14 +122,18 @@ public class DayNineteen implements JavaSolution {
         ProductionState productionState() {
             return new ProductionState(resources, robots);
         }
+
+        State trim(Resources maxResources) {
+            return new State(timestamp, resources.trim(maxResources), robots);
+        }
     }
 
     record ProductionState(Resources resources, Robots robots) {
     }
 
-    Set<Blueprint> parse(Stream<String> input) {
+    List<Blueprint> parse(Stream<String> input) {
         Iterator<String> iterator = input.iterator();
-        HashSet<Blueprint> blueprints = new HashSet<>();
+        List<Blueprint> blueprints = new ArrayList<>();
 
         while (iterator.hasNext()) {
             String line = iterator.next();
@@ -160,20 +173,20 @@ public class DayNineteen implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        Set<Blueprint> blueprints = parse(input);
+        List<Blueprint> blueprints = parse(input).stream().limit(3).toList();
         ArrayList<Future<Integer>> futures = new ArrayList<>();
-        int answer = 0;
+        int answer = 1;
 
         ExecutorService executorService = Executors.newFixedThreadPool(10);
 
         for (Blueprint blueprint : blueprints) {
-            Future<Integer> future = executorService.submit(() -> quality(blueprint, 24));
+            Future<Integer> future = executorService.submit(() -> quality(blueprint, 32));
             futures.add(future);
         }
 
         for (Future<Integer> future : futures) {
             try {
-                answer += future.get();
+                answer *= future.get();
             } catch (Exception exception) {
                 throw new RuntimeException(exception);
             }
@@ -182,6 +195,13 @@ public class DayNineteen implements JavaSolution {
         executorService.shutdown();
 
         return answer;
+    }
+
+    Resources max(Blueprint blueprint, int timestamp, int total) {
+        int diff = total - timestamp;
+        int maxOre = Math.max(blueprint.oreRobot.ore, Math.max(blueprint.clayRobot.ore, Math.max(blueprint.obsidianRobot.ore, blueprint.geodeRobot.ore)));
+
+        return new Resources(maxOre * diff, blueprint.obsidianRobot.clay * diff, blueprint.geodeRobot.obsidian * diff, Integer.MAX_VALUE);
     }
 
     int quality(Blueprint blueprint, int minutes) {
@@ -196,7 +216,8 @@ public class DayNineteen implements JavaSolution {
         states.add(initialState);
 
         while (!states.isEmpty()) {
-            State state = states.poll();
+            State polledState = states.poll();
+            State state = polledState.trim(max(blueprint, polledState.timestamp, minutes));
 
             if (timestamp != state.timestamp) {
                 Instant end = Instant.now();
@@ -224,7 +245,7 @@ public class DayNineteen implements JavaSolution {
             }
         }
 
-        return maxGeodes * blueprint.id;
+        return maxGeodes;
     }
 
     Set<State> nextStates(State state, Blueprint blueprint) {
