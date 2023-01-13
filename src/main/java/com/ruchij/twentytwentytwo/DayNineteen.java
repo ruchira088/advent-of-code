@@ -2,8 +2,11 @@ package com.ruchij.twentytwentytwo;
 
 import com.ruchij.JavaSolution;
 
+import java.time.Instant;
 import java.util.*;
-import java.util.function.Function;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -14,15 +17,15 @@ public class DayNineteen implements JavaSolution {
     }
 
     interface Robot {
-        Map<Material, Integer> resourceRequirements();
+        Resources resourceRequirements();
 
         Material producedResource();
     }
 
     record OreRobot(int ore) implements Robot {
         @Override
-        public Map<Material, Integer> resourceRequirements() {
-            return Map.of(Material.ORE, ore);
+        public Resources resourceRequirements() {
+            return new Resources(ore, 0, 0, 0);
         }
 
         @Override
@@ -38,15 +41,15 @@ public class DayNineteen implements JavaSolution {
         }
 
         @Override
-        public Map<Material, Integer> resourceRequirements() {
-            return Map.of(Material.ORE, ore);
+        public Resources resourceRequirements() {
+            return new Resources(ore, 0, 0, 0);
         }
     }
 
     record ObsidianRobot(int ore, int clay) implements Robot {
         @Override
-        public Map<Material, Integer> resourceRequirements() {
-            return Map.of(Material.ORE, ore, Material.CLAY, clay);
+        public Resources resourceRequirements() {
+            return new Resources(ore, clay, 0, 0);
         }
 
         @Override
@@ -57,8 +60,8 @@ public class DayNineteen implements JavaSolution {
 
     record GeodeRobot(int ore, int obsidian) implements Robot {
         @Override
-        public Map<Material, Integer> resourceRequirements() {
-            return Map.of(Material.ORE, ore, Material.OBSIDIAN, obsidian);
+        public Resources resourceRequirements() {
+            return new Resources(ore, 0, obsidian, 0);
         }
 
         @Override
@@ -71,13 +74,48 @@ public class DayNineteen implements JavaSolution {
                      GeodeRobot geodeRobot) {
     }
 
-    record State(int timestamp, Map<Material, Integer> resources, Map<Robot, Integer> robots) {
+    record Resources(int ore, int clay, int obsidian, int geode) {
+        Resources plus(Resources resources) {
+            return new Resources(
+                    ore + resources.ore,
+                    clay + resources.clay,
+                    obsidian + resources.obsidian,
+                    geode + resources.geode
+            );
+        }
+
+        Resources minus(Resources resources) {
+            return new Resources(
+                    ore - resources.ore,
+                    clay - resources.clay,
+                    obsidian - resources.obsidian,
+                    geode - resources.geode
+            );
+        }
+    }
+
+    record Robots(int oreRobot, int clayRobot, int obsidianRobot, int geodeRobot) {
+        Resources mine() {
+            return new Resources(oreRobot, clayRobot, obsidianRobot, geodeRobot);
+        }
+
+        Robots add(Robot robot) {
+            return switch (robot.producedResource()) {
+                case ORE -> new Robots(oreRobot + 1, clayRobot, obsidianRobot, geodeRobot);
+                case CLAY -> new Robots(oreRobot, clayRobot + 1, obsidianRobot, geodeRobot);
+                case OBSIDIAN -> new Robots(oreRobot, clayRobot, obsidianRobot + 1, geodeRobot);
+                case GEODE -> new Robots(oreRobot, clayRobot, obsidianRobot, geodeRobot + 1);
+            };
+        }
+    }
+
+    record State(int timestamp, Resources resources, Robots robots) {
         ProductionState productionState() {
             return new ProductionState(resources, robots);
         }
     }
 
-    record ProductionState(Map<Material, Integer> resources, Map<Robot, Integer> robots) {
+    record ProductionState(Resources resources, Robots robots) {
     }
 
     Set<Blueprint> parse(Stream<String> input) {
@@ -123,69 +161,62 @@ public class DayNineteen implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         Set<Blueprint> blueprints = parse(input);
+        ArrayList<Future<Integer>> futures = new ArrayList<>();
+        int answer = 0;
 
-        return maxGeodes(blueprints.stream().toList().get(0), 21);
-    }
+        ExecutorService executorService = Executors.newFixedThreadPool(10);
 
-    boolean belowMax(Map<Map<Robot, Integer>, Map<Material, Integer>> max, State state) {
-        Map<Material, Integer> materials = max.get(state.robots);
+        for (Blueprint blueprint : blueprints) {
+            Future<Integer> future = executorService.submit(() -> quality(blueprint, 24));
+            futures.add(future);
+        }
 
-        if (materials == null) {
-            max.put(state.robots, state.resources);
-            return false;
-        } else {
-            int count = 0;
-
-            for (Material material : Material.values()) {
-                if (materials.getOrDefault(material, 0) <= state.resources.getOrDefault(material, 0)) {
-                    count++;
-                }
-            }
-
-            if (count == 0) {
-                return true;
-            } else {
-                if (count == 4) {
-                    max.put(state.robots, state.resources);
-                }
-
-                return false;
+        for (Future<Integer> future : futures) {
+            try {
+                answer += future.get();
+            } catch (Exception exception) {
+                throw new RuntimeException(exception);
             }
         }
 
+        executorService.shutdown();
+
+        return answer;
     }
 
-    int maxGeodes(Blueprint blueprint, int minutes) {
+    int quality(Blueprint blueprint, int minutes) {
         ArrayDeque<State> states = new ArrayDeque<>();
         HashSet<ProductionState> visited = new HashSet<>();
-        Map<Map<Robot, Integer>, Map<Material, Integer>> max = new HashMap<>();
+        Instant start = Instant.now();
 
         int maxGeodes = 0;
         int timestamp = 0;
 
-        State initialState = new State(0, new HashMap<>(), new HashMap<>(Map.of(blueprint.oreRobot, 1)));
+        State initialState = new State(0, new Resources(0, 0, 0, 0), new Robots(1, 0, 0, 0));
         states.add(initialState);
 
         while (!states.isEmpty()) {
             State state = states.poll();
 
             if (timestamp != state.timestamp) {
+                Instant end = Instant.now();
+                System.out.println("Timestamp=%d Duration=%,dms".formatted(timestamp, end.toEpochMilli() - start.toEpochMilli()));
+                start = end;
+
                 visited.clear();
                 timestamp = state.timestamp;
             }
 
-            Integer geodes =
-                    state.resources.getOrDefault(Material.GEODE, 0) +
-                    state.robots.getOrDefault(blueprint.geodeRobot, 0);
-
-            if (!belowMax(max, state) && !visited.contains(state.productionState())) {
+            if (!visited.contains(state.productionState())) {
                 visited.add(state.productionState());
 
-                maxGeodes = Math.max(maxGeodes, state.resources.getOrDefault(Material.GEODE, 0));
+                if (state.resources.geode >= maxGeodes) {
+                    maxGeodes = state.resources.geode;
+                }
 
                 if (state.timestamp < minutes) {
                     for (State nextState : nextStates(state, blueprint)) {
-                        if (!belowMax(max, nextState) && !visited.contains(nextState.productionState())) {
+                        if (!visited.contains(nextState.productionState())) {
                             states.add(nextState);
                         }
                     }
@@ -193,85 +224,54 @@ public class DayNineteen implements JavaSolution {
             }
         }
 
-        return maxGeodes;
+        return maxGeodes * blueprint.id;
     }
 
-    Set<State> nextStates(State inputState, Blueprint blueprint) {
+    Set<State> nextStates(State state, Blueprint blueprint) {
         Set<State> states = new HashSet<>();
-        states.add(new State(inputState.timestamp, inputState.resources, inputState.robots));
+        states.add(new State(state.timestamp + 1, state.resources.plus(state.robots.mine()), state.robots));
 
-        Set<Robot> robots = Set.of(blueprint.oreRobot, blueprint.clayRobot, blueprint.obsidianRobot, blueprint.geodeRobot);
+        Set<Robot> robots = new HashSet<>(Set.of(blueprint.geodeRobot));
+
+        int maxOre =
+                Stream.of(blueprint.oreRobot.ore, blueprint.clayRobot.ore, blueprint.obsidianRobot.ore, blueprint.geodeRobot.ore)
+                        .max(Comparator.naturalOrder()).orElseThrow();
+
+        if (state.robots.clayRobot < blueprint.obsidianRobot.clay) {
+            robots.add(blueprint.clayRobot);
+        }
+
+        if (state.robots.obsidianRobot < blueprint.geodeRobot.obsidian) {
+            robots.add(blueprint.obsidianRobot);
+        }
+
+        if (state.robots.oreRobot < maxOre) {
+            robots.add(blueprint.oreRobot);
+        }
 
         for (Robot robot : robots) {
-            for (State state : new HashSet<>(states)) {
-                Map<Material, Integer> resources = new HashMap<>(state.resources);
-                int count = 0;
-
-                while (canAfford(robot, resources)) {
-                    resources = build(robot, resources);
-                    count++;
-
-                    HashMap<Robot, Integer> robotCount = new HashMap<>(state.robots);
-                    robotCount.put(robot, robotCount.getOrDefault(robot, 0) + count);
-
-                    states.add(new State(state.timestamp, resources, robotCount));
-                }
-            }
+            build(robot, state.resources)
+                    .ifPresent(leftover -> {
+                        State newState =
+                                new State(
+                                        state.timestamp + 1,
+                                        leftover.plus(state.robots.mine()),
+                                        state.robots.add(robot)
+                                );
+                        states.add(newState);
+                    });
         }
 
-        Set<State> nextStates = new HashSet<>();
-        int maxOre = Math.max(blueprint.geodeRobot.ore, Math.max(blueprint.obsidianRobot.ore, Math.max(blueprint.oreRobot().ore, blueprint.clayRobot.ore)));
-
-        Function<State, Boolean> isLogicalState =
-                state -> {
-                    Integer clay = state.resources.getOrDefault(Material.CLAY, 0);
-                    Integer obsidian = state.resources.getOrDefault(Material.OBSIDIAN, 0);
-                    Integer ore = state.resources.getOrDefault(Material.ORE, 0);
-
-                    return (clay < blueprint.obsidianRobot.clay || ore < blueprint.obsidianRobot.ore) &&
-                            (obsidian < blueprint.geodeRobot.obsidian || ore < blueprint.geodeRobot.ore) &&
-                            ore <= maxOre;
-                };
-
-        for (State state : states) {
-            if (isLogicalState.apply(state)) {
-                nextStates.add(new State(state.timestamp + 1, addMinedResources(state.resources, inputState.robots), state.robots));
-            }
-        }
-
-        return nextStates;
+        return states;
     }
 
-    Map<Material, Integer> addMinedResources(Map<Material, Integer> resources, Map<Robot, Integer> robots) {
-        HashMap<Material, Integer> updatedResources = new HashMap<>(resources);
+    Optional<Resources> build(Robot robot, Resources resources) {
+        Resources leftOver = resources.minus(robot.resourceRequirements());
 
-        for (Map.Entry<Robot, Integer> entry : robots.entrySet()) {
-            Material material = entry.getKey().producedResource();
-            updatedResources.put(material, updatedResources.getOrDefault(material, 0) + entry.getValue());
+        if (leftOver.ore >= 0 && leftOver.clay >= 0 && leftOver.obsidian >= 0 && leftOver.geode >= 0) {
+            return Optional.of(leftOver);
+        } else {
+            return Optional.empty();
         }
-
-        return updatedResources;
     }
-
-    boolean canAfford(Robot robot, Map<Material, Integer> resources) {
-        for (Map.Entry<Material, Integer> materialRequirement : robot.resourceRequirements().entrySet()) {
-            if (resources.getOrDefault(materialRequirement.getKey(), 0) < materialRequirement.getValue()) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    Map<Material, Integer> build(Robot robot, Map<Material, Integer> resources) {
-        HashMap<Material, Integer> updatedResources = new HashMap<>(resources);
-
-        for (Map.Entry<Material, Integer> materialRequirement : robot.resourceRequirements().entrySet()) {
-            updatedResources.put(materialRequirement.getKey(), updatedResources.get(materialRequirement.getKey()) - materialRequirement.getValue());
-        }
-
-        return updatedResources;
-    }
-
-
 }
