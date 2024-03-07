@@ -17,19 +17,27 @@ public class DayTwo implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        Map<Color, Integer> bundle =
-                Map.of(
-                        Color.RED, 12,
-                        Color.GREEN, 13,
-                        Color.BLUE, 14
-                );
-
         int sum = input.map(this::parse)
-                .filter(game -> isValid(game, bundle))
-                .mapToInt(game -> game.id)
+                .map(this::minimumCubes)
+                .mapToInt(colorIntegerMap ->
+                        colorIntegerMap.values().stream().reduce(1, (x, y) -> x * y)
+                )
                 .sum();
 
         return sum;
+    }
+
+    private Map<Color, Integer> minimumCubes(Game game) {
+        HashMap<Color, Integer> cubes = new HashMap<>();
+
+        for (Map<Color, Integer> turn : game.cubes) {
+            for (Map.Entry<Color, Integer> entry : turn.entrySet()) {
+                int current = cubes.getOrDefault(entry.getKey(), 0);
+                cubes.put(entry.getKey(), Math.max(current, entry.getValue()));
+            }
+        }
+
+        return cubes;
     }
 
     private boolean isValid(Game game, Map<Color, Integer> bundle) {
