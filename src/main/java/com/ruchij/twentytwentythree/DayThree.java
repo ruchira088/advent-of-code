@@ -6,51 +6,94 @@ import java.util.*;
 import java.util.stream.Stream;
 
 public class DayThree implements JavaSolution {
-    record Coordinate(int x, int y) {}
+    record Coordinate(int x, int y) {
+    }
+
+    record Point(int value, int id) {}
+
     @Override
     public Object solve(Stream<String> input) {
         LinkedHashMap<Coordinate, Character> map = parse(input);
-        int total = 0;
-        int current = 0;
-        boolean include = false;
+
+        Map<Coordinate, Point> numbers = numbers(map);
+
+        return findGear(map).stream().mapToInt(coordinate -> gearValue(coordinate, numbers)).sum();
+    }
+
+    private int gearValue(Coordinate coordinate, Map<Coordinate, Point> numbers) {
+        HashSet<Point> points = new HashSet<>();
+
+        for (int x : new int[] {-1, 0, 1}) {
+            for (int y : new int[] {-1, 0, 1}) {
+                Coordinate current = new Coordinate(coordinate.x + x, coordinate.y + y);
+
+                Point point = numbers.get(current);
+
+                if (point != null) {
+                    points.add(point);
+                }
+            }
+        }
+
+        if (points.size() != 2) {
+            return 0;
+        } else {
+            int result = 1;
+
+            for (Point point : points) {
+                result = result * point.value;
+            }
+
+            return result;
+        }
+    }
+
+
+    private Map<Coordinate, Point> numbers(Map<Coordinate, Character> map) {
+        HashMap<Coordinate, Point> coordinatePointHashMap = new HashMap<>();
+
+        int number = 0;
+        int y = 0;
+
+        Set<Coordinate> coordinates = new HashSet<>();
 
         for (Map.Entry<Coordinate, Character> entry : map.entrySet()) {
-            if (Character.isDigit(entry.getValue())) {
-                current = current * 10 + Character.digit(entry.getValue(), 10);
-                if (!include) {
-                    include = hasSymbolNearby(entry.getKey(), map);
-                }
-            } else {
-                if (include) {
-                    total += current;
-                    include = false;
+            if (Character.isDigit(entry.getValue()) && y == entry.getKey().y) {
+                number = number * 10 + Character.digit(entry.getValue(), 10);
+                coordinates.add(entry.getKey());
+            } else  {
+                int size = coordinatePointHashMap.size();
+
+                for (Coordinate coordinate : coordinates) {
+                    coordinatePointHashMap.put(coordinate, new Point(number, size));
                 }
 
-                current = 0;
+                coordinates = new HashSet<>();
+                number = 0;
+
+                if (Character.isDigit(entry.getValue())) {
+                    number = Character.digit(entry.getValue(), 10);
+                    coordinates.add(entry.getKey());
+                }
+            }
+
+            y = entry.getKey().y;
+        }
+
+        return coordinatePointHashMap;
+    }
+
+    private Set<Coordinate> findGear(Map<Coordinate, Character> map) {
+        HashSet<Coordinate> coordinates = new HashSet<>();
+
+        for (Map.Entry<Coordinate, Character> entry : map.entrySet()) {
+            if (entry.getValue() == '*') {
+                coordinates.add(entry.getKey());
             }
         }
 
-        if (include) {
-            total += current;
-        }
-
-        return total;
+        return coordinates;
     }
-
-    private boolean hasSymbolNearby(Coordinate coordinate, LinkedHashMap<Coordinate, Character> map) {
-        for (int x : new int[]{-1, 0, 1}) {
-            for (int y : new int[] {-1, 0, 1}) {
-                Character character = map.get(new Coordinate(coordinate.x + x, coordinate.y + y));
-
-                if (character != null && !Character.isDigit(character) && character != '.') {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
     private LinkedHashMap<Coordinate, Character> parse(Stream<String> input) {
         LinkedHashMap<Coordinate, Character> result = new LinkedHashMap<>();
         List<String> lines = new ArrayList<>(input.toList());
