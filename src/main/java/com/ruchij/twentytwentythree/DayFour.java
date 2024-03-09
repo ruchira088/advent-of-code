@@ -2,9 +2,7 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class DayFour implements JavaSolution {
@@ -13,9 +11,22 @@ public class DayFour implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        int sum = input.map(this::parse)
-                .mapToInt(this::cardPoints)
-                .sum();
+        List<Card> cards = input.map(this::parse).toList();
+        Map<Integer, Integer> cardCount = new HashMap<>();
+
+        for (Card card : cards) {
+            int count = cardCount.getOrDefault(card.id, 0) + 1;
+            cardCount.put(card.id, count);
+
+            int matches = cardPoints(card);
+
+            for (int i = 0; i < matches; i++) {
+                int cardId = card.id + i + 1;
+                cardCount.put(cardId, cardCount.getOrDefault(cardId, 0) + count);
+            }
+        }
+
+        int sum = cardCount.values().stream().mapToInt(x -> x).sum();
 
         return sum;
     }
@@ -30,11 +41,7 @@ public class DayFour implements JavaSolution {
             }
         }
 
-        if (matches == 0) {
-            return 0;
-        } else {
-            return (int) Math.pow(2, matches - 1);
-        }
+        return matches;
     }
 
     Card parse(String input) {
