@@ -10,7 +10,7 @@ public class DaySeven implements JavaSolution {
         ACE('A', 14),
         KING('K', 13),
         QUEEN('Q', 12),
-        JACK('J', 11),
+        JOKER('J', 1),
         TEN('T', 10),
         NINE('9', 9),
         EIGHT('8', 8),
@@ -132,17 +132,18 @@ public class DaySeven implements JavaSolution {
 
     private Combination combination(List<Card> cards) {
         Map<Card, Integer> cardMap = cardMap(cards);
+        Integer jokerCount = Optional.ofNullable(cardMap.remove(Card.JOKER)).orElse(0);
 
         List<Integer> list = cardMap.values().stream().sorted(Comparator.reverseOrder()).toList();
-        Integer first = list.getFirst();
+        int first = (list.isEmpty() ? 0 : list.getFirst()) + jokerCount;
 
         Combination combination =
                 switch (first) {
-                    case 5 -> Combination.FIVE_OF_A_KIND;
                     case 4 -> Combination.FOUR_OF_A_KIND;
                     case 3 -> list.get(1) == 2 ? Combination.FULL_HOUSE : Combination.THREE_OF_A_KIND;
                     case 2 -> list.get(1) == 2 ? Combination.TWO_PAIR : Combination.PAIR;
-                    case null, default -> Combination.HIGH_CARD;
+                    case 1 -> Combination.HIGH_CARD;
+                    default -> Combination.FIVE_OF_A_KIND;
                 };
 
         return combination;
