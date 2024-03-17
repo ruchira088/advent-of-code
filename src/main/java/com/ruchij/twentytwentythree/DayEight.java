@@ -2,10 +2,7 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -32,11 +29,15 @@ public class DayEight implements JavaSolution {
     }
 
     class Node {
-        private final String label;
+        private String label;
         private Node left;
         private Node right;
 
         Node(String label) {
+            this.label = label;
+        }
+
+        public void setLabel(String label) {
             this.label = label;
         }
 
@@ -61,36 +62,83 @@ public class DayEight implements JavaSolution {
         }
     }
 
-    record Game(List<Instruction> instructions, Node node) {}
+    record Game(List<Instruction> instructions, Node[] startNodes) {}
 
     @Override
     public Object solve(Stream<String> input) {
         Game game = parse(input);
-        long result = stepCount(game);
+        List<Long> cycles = cycles(game);
 
-        return result;
+        System.out.println(cycles);
+
+        return lcm(cycles);
     }
 
-    private long stepCount(Game game) {
+    private List<Long> cycles(Game game) {
+        Map<Integer, Long> map = new HashMap<>();
+        Node[] nodes = Arrays.copyOf(game.startNodes, game.startNodes.length);
         long count = 0;
 
-        Node node = game.node;
+        while (map.keySet().size() != nodes.length) {
+            for (Instruction instruction : game.instructions) {
+                for (int i = 0; i < nodes.length; i++) {
+                    Node node = nodes[i];
 
-        while (true) {
-            for (Instruction instruction : game.instructions()) {
-                if (node.getLabel().equalsIgnoreCase("ZZZ")) {
-                    return count;
-                } else {
-                    count++;
-
-                    if (instruction == Instruction.LEFT) {
-                        node = node.left;
-                    } else {
-                        node = node.right;
+                    if (node.getLabel().endsWith("Z") && !map.containsKey(i)) {
+                        map.put(i, count);
+                    } else if (!map.containsKey(i)) {
+                        Node next = instruction == Instruction.LEFT ? node.left : node.right;
+                        nodes[i] = next;
                     }
                 }
+
+                count++;
             }
         }
+
+        return List.copyOf(map.values());
+    }
+
+    private Map<Long, Long> factors(long number) {
+        HashMap<Long, Long> factors = new HashMap<>();
+        double end = Math.ceil(Math.sqrt(number));
+        long current = number;
+        int i = 2;
+
+        while (i <= Math.min(end, current)) {
+            if (current % i == 0) {
+                factors.put((long) i, factors.getOrDefault((long) i, 0L) + 1);
+                current = current / i;
+            } else {
+                i++;
+            }
+        }
+
+        if (current != 1) {
+            factors.put(current, 1L);
+        }
+
+        return factors;
+    }
+
+    long lcm(List<Long> numbers) {
+        long result = 1;
+        Map<Long, Long> values = new HashMap<>();
+
+        for (Long number : numbers) {
+            Map<Long, Long> factors = factors(number);
+
+            for (Map.Entry<Long, Long> entry : Set.copyOf(factors.entrySet())) {
+                long value = Math.max(values.getOrDefault(entry.getKey(), 0L), entry.getValue());
+                values.put(entry.getKey(), value);
+            }
+        }
+
+        for (Map.Entry<Long, Long> entry : values.entrySet()) {
+            result = result * ((long) Math.pow(entry.getKey(), entry.getValue()));
+        }
+
+        return result;
     }
 
     private Game parse(Stream<String> input) {
@@ -102,6 +150,7 @@ public class DayEight implements JavaSolution {
         inputList.removeFirst();
 
         HashMap<String, Node> nodeHashMap = new HashMap<>();
+        ArrayList<Node> startNodes = new ArrayList<>();
 
         Pattern pattern = Pattern.compile("(\\S+) = \\((\\S+), (\\S+)\\)");
 
@@ -116,6 +165,10 @@ public class DayEight implements JavaSolution {
                 Node leftNode = nodeHashMap.computeIfAbsent(left, __ -> new Node(left));
                 Node rightNode = nodeHashMap.computeIfAbsent(right, __ -> new Node(right));
 
+                if (value.endsWith("A")) {
+                    startNodes.add(node);
+                }
+
                 node.setLeft(leftNode);
                 node.setRight(rightNode);
             } else {
@@ -123,7 +176,7 @@ public class DayEight implements JavaSolution {
             }
         }
 
-        Game game = new Game(instructions, nodeHashMap.get("AAA"));
+        Game game = new Game(instructions, startNodes.toArray(size -> new Node[size]));
 
         return game;
     }
