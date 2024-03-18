@@ -14,7 +14,7 @@ public class DayNine implements JavaSolution {
         List<List<Long>> numbers = parse(input);
 
         long sum = numbers.stream()
-                .mapToLong(this::nextNumber)
+                .mapToLong(this::previousValue)
                 .sum();
 
         return sum;
@@ -28,7 +28,7 @@ public class DayNine implements JavaSolution {
                 .toList();
     }
 
-    Long nextNumber(List<Long> numbers) {
+    Long previousValue(List<Long> numbers) {
         List<Long> current = numbers;
         Stack<List<Long>> stack = new Stack<>();
         stack.add(current);
@@ -38,14 +38,14 @@ public class DayNine implements JavaSolution {
             stack.add(current);
         }
 
-        long lastElement = 0;
+        long firstElement = 0;
 
         while (!stack.isEmpty()) {
             List<Long> longs = stack.pop();
-            lastElement = longs.getLast() + lastElement;
+            firstElement = longs.getFirst() - firstElement;
         }
 
-        return lastElement;
+        return firstElement;
     }
 
     private boolean isAllZero(List<Long> list) {
