@@ -37,27 +37,34 @@ public class DayTen implements JavaSolution {
         Coordinate startingPosition = startingPosition(pipeMap);
 
         Set<Coordinate> visited = new HashSet<>();
-        ArrayDeque<Entry> queue = new ArrayDeque<>();
-        int max = 0;
-        queue.add(new Entry(startingPosition, 0));
+        ArrayDeque<Coordinate> queue = new ArrayDeque<>();
+        queue.add(startingPosition);
 
         while (!queue.isEmpty()) {
-            Entry entry = queue.poll();
-            Coordinate coordinate = entry.coordinate;
+            Coordinate coordinate = queue.poll();
 
             if (!visited.contains(coordinate)) {
-                max = Math.max(max, entry.steps);
                 visited.add(coordinate);
 
                 List<Coordinate> nextCoordinates = next(coordinate, pipeMap.get(coordinate));
-
-                for (Coordinate next : nextCoordinates) {
-                    queue.add(new Entry(next, entry.steps + 1));
-                }
+                queue.addAll(nextCoordinates);
             }
         }
 
-        return max;
+        Set<Coordinate> isolated = isolated(pipeMap, visited);
+
+        return isolated;
+    }
+
+    private Set<Coordinate> isolated(Map<Coordinate, Pipe> pipeMap, Set<Coordinate> visited) {
+        Set<Coordinate> coordinates = pipeMap.keySet();
+
+        for (Coordinate coordinate : visited) {
+            coordinates.remove(coordinate);
+        }
+
+
+        return coordinates;
     }
 
     private List<Coordinate> next(Coordinate position, Pipe pipe) {
