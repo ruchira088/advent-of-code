@@ -84,8 +84,9 @@ public class DayEleven implements JavaSolution {
     }
 
     Coordinate transform(Coordinate coordinate, SortedSet<Integer> emptyRows, SortedSet<Integer> emptyColumns) {
-        int yDiff = emptyRows.headSet(coordinate.y()).size();
-        int xDiff = emptyColumns.headSet(coordinate.x()).size();
+        int replacement = 1_000_000;
+        int yDiff = emptyRows.headSet(coordinate.y()).size() * (replacement - 1);
+        int xDiff = emptyColumns.headSet(coordinate.x()).size() * (replacement - 1);
 
         Coordinate transformed = new Coordinate(coordinate.x + xDiff, coordinate.y + yDiff);
         return transformed;
