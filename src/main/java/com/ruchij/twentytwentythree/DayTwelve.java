@@ -28,10 +28,7 @@ public class DayTwelve implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        List<Line> lines = input.map(this::parse).toList();
-
-
-        return null;
+        return input.map(this::parse).mapToInt(this::count).sum();
     }
 
     List<Integer> describe(List<State> springs) {
@@ -69,11 +66,18 @@ public class DayTwelve implements JavaSolution {
         return list;
     }
 
-    int count(Line line) {
-        return count(line.springs, line.damaged, false);
+    <T> List<T> addToTail(List<T> init, T last) {
+        ArrayList<T> list = new ArrayList<>(init);
+        list.add(last);
+
+        return list;
     }
 
-    int count(List<State> states, List<Integer> damaged, boolean inGroup) {
+    int count(Line line) {
+        return count(line.springs, line.damaged, false, List.of());
+    }
+
+    int count(List<State> states, List<Integer> damaged, boolean inGroup, List<State> history) {
 //        System.out.println("states=%s, damaged=%s, inGroup=%s".formatted(states, damaged, inGroup));
 
         if (damaged.isEmpty() & states.isEmpty()) {
@@ -82,43 +86,47 @@ public class DayTwelve implements JavaSolution {
             State head = states.getFirst();
 
             if (head == State.OPERATIONAL || head == State.UNKNOWN) {
-                return count(states.subList(1, states.size()), damaged, false);
+                return count(states.subList(1, states.size()), damaged, false, addToTail(history, head));
             } else {
                 return 0;
             }
         }
         if (states.isEmpty()) {
-            return damaged.getFirst() == 0 ? 1 : 0;
+            Integer head = damaged.getFirst();
+
+            return head == 0 ? count(states, damaged.subList(1, damaged.size()), inGroup, history) : 0;
         } else {
             State stateHead = states.getFirst();
             List<State> stateTail = states.subList(1, states.size());
             Integer damagedHead = damaged.getFirst();
             List<Integer> damageTail = damaged.subList(1, damaged.size());
 
+            List<State> path = addToTail(history, stateHead);
+
             int count = 0;
 
             if (inGroup) {
                 if (damagedHead > 0) {
                     if (stateHead == State.UNKNOWN || stateHead == State.DAMAGED) {
-                        count += count(stateTail, addToHead(damagedHead - 1, damageTail), true);
+                        count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, path);
                     }
                 } else {
                     if (stateHead == State.UNKNOWN || stateHead == State.OPERATIONAL) {
-                        count += count(stateTail, damageTail, false);
+                        count += count(stateTail, damageTail, false, path);
                     }
                 }
             } else {
                 if (stateHead == State.UNKNOWN) {
-                    count += count(addToHead(State.DAMAGED, stateTail), damaged, false);
-                    count += count(addToHead(State.OPERATIONAL, stateTail), damaged, false);
+                    count += count(addToHead(State.DAMAGED, stateTail), damaged, false, path);
+                    count += count(addToHead(State.OPERATIONAL, stateTail), damaged, false, path);
                 } else if (stateHead == State.DAMAGED) {
-                    count += count(stateTail, addToHead(damagedHead - 1, damageTail), true);
+                    count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, path);
                 } else {
-                    count += count(stateTail, damaged, false);
+                    count += count(stateTail, damaged, false, path);
                 }
             }
 
-            System.out.println("states=%s, damaged=%s, count=%s".formatted(states, damaged, count));
+//            System.out.println("states=%s, damaged=%s, count=%s".formatted(states, damaged, count));
 
             return count;
         }
