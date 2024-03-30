@@ -2,9 +2,7 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class DayTwelve implements JavaSolution {
@@ -23,39 +21,40 @@ public class DayTwelve implements JavaSolution {
         }
     }
 
+    record Key(List<State> springs, List<Integer> damaged, boolean inGroup) {}
+
     record Line(List<State> springs, List<Integer> damaged) {
     }
 
     @Override
     public Object solve(Stream<String> input) {
-        return input.map(this::parse).mapToInt(this::count).sum();
-    }
+        long result = 0;
+        int index = 0;
 
-    List<Integer> describe(List<State> springs) {
-        ArrayList<Integer> groups = new ArrayList<>();
+        HashMap<Key, Long> cache = new HashMap<>();
 
-        int count = 0;
+        for (String inputLine : input.toList()) {
+            Line line = unfold(parse(inputLine));
+            long count = count(line, cache);
+            result += count;
 
-        for (State state : springs) {
-            if (state == State.OPERATIONAL) {
-                if (count != 0) {
-                    groups.add(count);
-                    count = 0;
-                }
-            } else {
-                count++;
-            }
+            System.out.println("%s -> %s".formatted(index++, count));
         }
 
-        if (count != 0) {
-            groups.add(count);
-        }
-
-        return groups;
+        return result;
     }
 
-    boolean isValid(Line line) {
-        return describe(line.springs).equals(line.damaged);
+    Line unfold(Line line) {
+        ArrayList<State> states = new ArrayList<>(line.springs);
+        ArrayList<Integer> integers = new ArrayList<>(line.damaged);
+
+        for (int i = 0; i < 4; i++) {
+            states.add(State.UNKNOWN);
+            states.addAll(line.springs);
+            integers.addAll(line.damaged);
+        }
+
+        return new Line(states, integers);
     }
 
     <T> List<T> addToHead(T head, List<T> tail) {
@@ -73,12 +72,18 @@ public class DayTwelve implements JavaSolution {
         return list;
     }
 
-    int count(Line line) {
-        return count(line.springs, line.damaged, false, List.of());
+    long count(Line line, Map<Key, Long> cache) {
+        return count(line.springs, line.damaged, false, cache);
     }
 
-    int count(List<State> states, List<Integer> damaged, boolean inGroup, List<State> history) {
+    long count(List<State> states, List<Integer> damaged, boolean inGroup, Map<Key, Long> cache) {
 //        System.out.println("states=%s, damaged=%s, inGroup=%s".formatted(states, damaged, inGroup));
+
+        Long result = cache.get(new Key(states, damaged, inGroup));
+
+        if (result != null) {
+            return result;
+        }
 
         if (damaged.isEmpty() & states.isEmpty()) {
             return 1;
@@ -86,7 +91,7 @@ public class DayTwelve implements JavaSolution {
             State head = states.getFirst();
 
             if (head == State.OPERATIONAL || head == State.UNKNOWN) {
-                return count(states.subList(1, states.size()), damaged, false, addToTail(history, head));
+                return count(states.subList(1, states.size()), damaged, false, cache);
             } else {
                 return 0;
             }
@@ -94,39 +99,37 @@ public class DayTwelve implements JavaSolution {
         if (states.isEmpty()) {
             Integer head = damaged.getFirst();
 
-            return head == 0 ? count(states, damaged.subList(1, damaged.size()), inGroup, history) : 0;
+            return head == 0 ? count(states, damaged.subList(1, damaged.size()), inGroup, cache) : 0;
         } else {
             State stateHead = states.getFirst();
             List<State> stateTail = states.subList(1, states.size());
             Integer damagedHead = damaged.getFirst();
             List<Integer> damageTail = damaged.subList(1, damaged.size());
 
-            List<State> path = addToTail(history, stateHead);
-
-            int count = 0;
+            long count = 0;
 
             if (inGroup) {
                 if (damagedHead > 0) {
                     if (stateHead == State.UNKNOWN || stateHead == State.DAMAGED) {
-                        count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, path);
+                        count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, cache);
                     }
                 } else {
                     if (stateHead == State.UNKNOWN || stateHead == State.OPERATIONAL) {
-                        count += count(stateTail, damageTail, false, path);
+                        count += count(stateTail, damageTail, false, cache);
                     }
                 }
             } else {
                 if (stateHead == State.UNKNOWN) {
-                    count += count(addToHead(State.DAMAGED, stateTail), damaged, false, path);
-                    count += count(addToHead(State.OPERATIONAL, stateTail), damaged, false, path);
+                    count += count(addToHead(State.DAMAGED, stateTail), damaged, false, cache);
+                    count += count(addToHead(State.OPERATIONAL, stateTail), damaged, false, cache);
                 } else if (stateHead == State.DAMAGED) {
-                    count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, path);
+                    count += count(stateTail, addToHead(damagedHead - 1, damageTail), true, cache);
                 } else {
-                    count += count(stateTail, damaged, false, path);
+                    count += count(stateTail, damaged, false, cache);
                 }
             }
 
-//            System.out.println("states=%s, damaged=%s, count=%s".formatted(states, damaged, count));
+            cache.put(new Key(states, damaged, inGroup), count);
 
             return count;
         }
