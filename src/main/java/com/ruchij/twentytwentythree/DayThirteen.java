@@ -2,20 +2,33 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public class DayThirteen implements JavaSolution {
+    record Result(int index, boolean smudgeFixed) {
+    }
+
     @Override
     public Object solve(Stream<String> input) {
         List<boolean[][]> grids = parse(input);
 
         return grids.stream()
-                .peek(this::printGrid)
+//                .peek(this::printGrid)
                 .mapToLong(grid ->
-                        verticalReflection(grid)
-                                .or(() -> horizontalReflection(grid).map(value -> value * 100))
-                                .orElseThrow()
+                        Stream.concat(
+                                        verticalReflection(grid).stream(),
+                                        horizontalReflection(grid).stream().map(value -> new Result(value.index * 100, value.smudgeFixed)
+                                        )
+                                )
+                                .filter(result -> result.smudgeFixed)
+                                .peek(System.out::println)
+                                .mapToInt(result -> result.index)
+                                .findFirst()
+                                .getAsInt()
+
                 )
                 .peek(System.out::println)
                 .sum();
@@ -53,35 +66,40 @@ public class DayThirteen implements JavaSolution {
         return list;
     }
 
-    Optional<Integer> verticalReflection(boolean[][] grid) {
+    List<Result> verticalReflection(boolean[][] grid) {
         int width = grid[0].length;
         int height = grid.length;
+
+        ArrayList<Result> results = new ArrayList<>();
 
         for (int x1 = 0; x1 < width; x1++) {
             for (int x2 = x1 + 1; x2 < width; x2++) {
                 boolean isMatch = true;
+                boolean smudgeFixed = false;
 
                 for (int y = 0; y < height; y++) {
                     if (grid[y][x1] != grid[y][x2]) {
-                        isMatch = false;
-                        break;
+                        if (smudgeFixed) {
+                            isMatch = false;
+                            break;
+                        } else {
+                            smudgeFixed = true;
+                        }
                     }
                 }
 
                 if (isMatch) {
-                    Optional<Integer> verticalReflection = isVerticalReflection(grid, x1, x2);
+                    Optional<Result> verticalReflection = isVerticalReflection(grid, x1, x2, false);
 
-                    if (verticalReflection.isPresent()) {
-                        return verticalReflection;
-                    }
+                    verticalReflection.ifPresent(results::add);
                 }
             }
         }
 
-        return Optional.empty();
+        return results;
     }
 
-    Optional<Integer> isVerticalReflection(boolean[][] grid, int x1, int x2) {
+    Optional<Result> isVerticalReflection(boolean[][] grid, int x1, int x2, boolean smudgeFixed) {
         int height = grid.length;
         int width = grid[0].length;
         int left = x1;
@@ -90,7 +108,11 @@ public class DayThirteen implements JavaSolution {
         while (left < right) {
             for (int y = 0; y < height; y++) {
                 if (grid[y][left] != grid[y][right]) {
-                    return Optional.empty();
+                    if (smudgeFixed) {
+                        return Optional.empty();
+                    } else {
+                        smudgeFixed = true;
+                    }
                 }
             }
 
@@ -104,13 +126,17 @@ public class DayThirteen implements JavaSolution {
 
         int result = left;
 
-        left = x1;
-        right = x2;
+        left = x1 - 1;
+        right = x2 + 1;
 
         while (left >= 0 && right < width) {
             for (int y = 0; y < height; y++) {
                 if (grid[y][left] != grid[y][right]) {
-                    return Optional.empty();
+                    if (smudgeFixed) {
+                        return Optional.empty();
+                    } else {
+                        smudgeFixed = true;
+                    }
                 }
             }
 
@@ -118,38 +144,42 @@ public class DayThirteen implements JavaSolution {
             right++;
         }
 
-        return Optional.of(result);
+        return Optional.of(new Result(result, smudgeFixed));
     }
 
-    Optional<Integer> horizontalReflection(boolean[][] grid) {
+    List<Result> horizontalReflection(boolean[][] grid) {
         int width = grid[0].length;
         int height = grid.length;
+        ArrayList<Result> results = new ArrayList<>();
 
         for (int y1 = 0; y1 < height; y1++) {
             for (int y2 = y1 + 1; y2 < height; y2++) {
                 boolean isMatch = true;
+                boolean smudgeFixed = false;
 
                 for (int x = 0; x < width; x++) {
                     if (grid[y1][x] != grid[y2][x]) {
-                        isMatch = false;
-                        break;
+                        if (smudgeFixed) {
+                            isMatch = false;
+                            break;
+                        } else {
+                            smudgeFixed = true;
+                        }
                     }
                 }
 
                 if (isMatch) {
-                    Optional<Integer> horizontalReflection = isHorizontalReflection(grid, y1, y2);
+                    Optional<Result> horizontalReflection = isHorizontalReflection(grid, y1, y2, false);
 
-                    if (horizontalReflection.isPresent()) {
-                        return horizontalReflection;
-                    }
+                    horizontalReflection.ifPresent(results::add);
                 }
             }
         }
 
-        return Optional.empty();
+        return results;
     }
 
-    Optional<Integer> isHorizontalReflection(boolean[][] grid, int y1, int y2) {
+    Optional<Result> isHorizontalReflection(boolean[][] grid, int y1, int y2, boolean smudgeFixed) {
         int width = grid[0].length;
         int height = grid.length;
         int top = y1;
@@ -158,7 +188,11 @@ public class DayThirteen implements JavaSolution {
         while (top < bottom) {
             for (int x = 0; x < width; x++) {
                 if (grid[top][x] != grid[bottom][x]) {
-                    return Optional.empty();
+                    if (smudgeFixed) {
+                        return Optional.empty();
+                    } else {
+                        smudgeFixed = true;
+                    }
                 }
             }
 
@@ -172,13 +206,17 @@ public class DayThirteen implements JavaSolution {
 
         int result = top;
 
-        top = y1;
-        bottom = y2;
+        top = y1 - 1;
+        bottom = y2 + 1;
 
         while (top >= 0 && bottom < height) {
             for (int x = 0; x < width; x++) {
                 if (grid[top][x] != grid[bottom][x]) {
-                    return Optional.empty();
+                    if (smudgeFixed) {
+                        return Optional.empty();
+                    } else {
+                        smudgeFixed = true;
+                    }
                 }
             }
 
@@ -186,7 +224,7 @@ public class DayThirteen implements JavaSolution {
             bottom++;
         }
 
-        return Optional.of(result);
+        return Optional.of(new Result(result, smudgeFixed));
     }
 
     boolean[] parseLine(String line) {
