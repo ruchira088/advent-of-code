@@ -11,10 +11,10 @@ class DayFourteenTest {
 
     @Test
     void shouldTiltCorrectly() {
-        List<DayFourteen.State> list = List.of(ROUND, ROUND, EMPTY, ROUND, SQUARE, EMPTY, ROUND, EMPTY);
-        System.out.println(list);
-        List<DayFourteen.State> result = dayFourteen.tiltNorth(List.of(ROUND, ROUND, EMPTY, ROUND, SQUARE, EMPTY, ROUND, EMPTY));
-        System.out.println(result);
+//        List<DayFourteen.State> list = List.of(ROUND, ROUND, EMPTY, ROUND, SQUARE, EMPTY, ROUND, EMPTY);
+//        System.out.println(list);
+//        List<DayFourteen.State> result = dayFourteen.tiltNorth(List.of(ROUND, ROUND, EMPTY, ROUND, SQUARE, EMPTY, ROUND, EMPTY));
+//        System.out.println(result);
     }
 
 }

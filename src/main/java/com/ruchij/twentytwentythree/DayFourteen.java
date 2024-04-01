@@ -2,8 +2,9 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.Stream;
 
 public class DayFourteen implements JavaSolution {
@@ -18,6 +19,11 @@ public class DayFourteen implements JavaSolution {
             this.symbol = symbol;
         }
 
+        @Override
+        public String toString() {
+            return String.valueOf(symbol);
+        }
+
         static State parse(char character) {
             return Arrays.stream(values())
                     .filter(state -> state.symbol == character)
@@ -28,88 +34,65 @@ public class DayFourteen implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        Map<Coordinate, State> parsed = parse(input);
-        Map<Integer, List<Map.Entry<Coordinate, State>>> listMap = parsed.entrySet().stream()
-                .collect(Collectors.groupingBy(entry -> entry.getKey().x));
+        State[][] states = parse(input);
 
-        long sum = order(listMap)
-                .stream()
-                .map(this::tiltNorth)
-                .mapToLong(this::weight)
-                .sum();
+        tiltNorth(states);
 
-        return sum;
+        return weight(states);
     }
 
-    long weight(List<State> states) {
+    long weight(State[][] states) {
         long value = 0;
-        int size = states.size();
 
-        for (int i = 0; i < size; i++) {
-            if (states.get(i) == State.ROUND) {
-                value += size - i;
+        for (int x = 0; x < states[0].length; x++) {
+            for (int y = 0; y < states.length; y++) {
+                State state = states[y][x];
+
+                if (state == State.ROUND) {
+                    value += (states.length - y);
+                }
             }
         }
 
         return value;
     }
 
-    List<State> tiltNorth(List<State> states) {
-        ArrayList<State> arrayList = new ArrayList<>(states.size());
+    void tiltNorth(State[][] states) {
+        for (int x = 0; x < states[0].length; x++) {
+            int edge = 0;
 
-        int edge = 0;
+            for (int y = 0; y < states.length; y++) {
+                State state = states[y][x];
 
-        for (int i = 0; i < states.size(); i++) {
-            State state = states.get(i);
-            if (state == State.ROUND) {
-                arrayList.add(edge, state);
-                edge++;
-            } else if (state == State.SQUARE) {
-                edge = i;
-                edge++;
-                arrayList.add(state);
-            } else {
-                arrayList.add(state);
+                if (state == State.ROUND) {
+                    states[y][x] = State.EMPTY;
+                    states[edge][x] = State.ROUND;
+                    edge++;
+                } else if (state == State.SQUARE) {
+                    edge = y + 1;
+                }
             }
         }
-
-        return arrayList;
     }
 
-    List<List<State>> order(Map<Integer, List<Map.Entry<Coordinate, State>>> map) {
-        List<List<State>> lists = new ArrayList<>();
-
-        Stream<Map.Entry<Integer, List<Map.Entry<Coordinate, State>>>> sorted = map.entrySet().stream().sorted(Map.Entry.comparingByKey());
-
-        for (Map.Entry<Integer, List<Map.Entry<Coordinate, State>>> entry : sorted.toList()) {
-            List<State> list = entry.getValue().stream()
-                    .sorted(Comparator.comparingInt(coordinateStateEntry -> coordinateStateEntry.getKey().y))
-                    .map(value -> value.getValue())
-                    .toList();
-
-            lists.add(list);
-        }
-
-        return lists;
-    }
-
-    Map<Coordinate, State> parse(Stream<String> input) {
-        HashMap<Coordinate, State> coordinateStateHashMap = new HashMap<>();
+    State[][] parse(Stream<String> input) {
         List<String> lines = input.toList();
-        int row = 0;
+        List<State[]> rows = new ArrayList<>();
 
         for (String line : lines) {
             char[] chars = line.toCharArray();
+            State[] row = new State[chars.length];
 
-            for (int i = 0; i < chars.length; i++) {
-                State state = State.parse(chars[i]);
-                Coordinate coordinate = new Coordinate(i, row);
-                coordinateStateHashMap.put(coordinate, state);
+            for (int column = 0; column < chars.length; column++) {
+                State state = State.parse(chars[column]);
+                row[column] = state;
             }
 
-            row++;
+            rows.add(row);
         }
 
-        return coordinateStateHashMap;
+        State[][] array = rows.toArray(State[][]::new);
+
+        return array;
     }
 }
