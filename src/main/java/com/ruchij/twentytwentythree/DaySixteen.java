@@ -50,14 +50,41 @@ public class DaySixteen implements JavaSolution {
     @Override
     public Object solve(Stream<String> input) {
         Map<Coordinate, Tile> grid = parse(input);
-        Position startingPosition = new Position(new Coordinate(0, 0), RIGHT);
-        HashSet<Position> visited = new HashSet<>();
 
         Comparator<Coordinate> comparatorX = Comparator.comparing(Coordinate::x);
         Comparator<Coordinate> comparatorY = Comparator.comparing(Coordinate::y);
 
         Coordinate dimensions =
                 grid.keySet().stream().sorted(comparatorX.thenComparing(comparatorY).reversed()).findFirst().orElseThrow();
+
+        HashSet<Position> startingPositions = getPositions(dimensions);
+
+        int max = 0;
+
+        for (Position startingPosition : startingPositions) {
+            max = Math.max(solve(grid, startingPosition, dimensions), max);
+        }
+
+        return max;
+    }
+
+    private HashSet<Position> getPositions(Coordinate dimensions) {
+        HashSet<Position> startingPositions = new HashSet<>();
+
+        for (int x = 0; x <= dimensions.x; x++) {
+            startingPositions.add(new Position(new Coordinate(x, 0), DOWN));
+            startingPositions.add(new Position(new Coordinate(x, dimensions.y), UP));
+        }
+
+        for (int y = 0; y <= dimensions.y; y++) {
+            startingPositions.add(new Position(new Coordinate(0, y), RIGHT));
+            startingPositions.add(new Position(new Coordinate(dimensions.x, y), LEFT));
+        }
+        return startingPositions;
+    }
+
+    int solve(Map<Coordinate, Tile> grid, Position startingPosition, Coordinate dimensions) {
+        HashSet<Position> visited = new HashSet<>();
 
         Stack<Position> positions = new Stack<>();
         positions.add(startingPosition);
