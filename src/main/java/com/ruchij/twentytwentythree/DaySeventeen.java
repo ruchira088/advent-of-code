@@ -12,7 +12,18 @@ public class DaySeventeen implements JavaSolution {
     }
 
     enum Direction {
-        UP, DOWN, LEFT, RIGHT
+        UP('^'), DOWN('v'), LEFT('<'), RIGHT('>');
+
+        private final char symbol;
+
+        Direction(char symbol) {
+            this.symbol = symbol;
+        }
+
+        @Override
+        public String toString() {
+            return String.valueOf(symbol);
+        }
     }
 
     record Position(Coordinate coordinate, Direction direction) {
@@ -21,7 +32,31 @@ public class DaySeventeen implements JavaSolution {
         }
     }
 
-    record QueueEntry(Position position, int heatLoss, LinkedList<Direction> lastDirections) {
+    record Visited(Position position, List<Direction> lastDirections) {}
+
+    record QueueEntry(Position position, int heatLoss, LinkedList<Direction> lastDirections, List<Position> path) {
+    }
+
+    String stringify(Map<Coordinate, Integer> grid, List<Position> path, Coordinate dimensions) {
+        StringBuilder stringBuilder = new StringBuilder();
+        HashMap<Coordinate, String> map = new HashMap<>();
+
+        for (Map.Entry<Coordinate, Integer> entry : grid.entrySet()) {
+            map.put(entry.getKey(), entry.getValue().toString());
+        }
+
+        for (Position position : path) {
+            map.put(position.coordinate, position.direction.toString());
+        }
+
+        for (int y = 0; y <= dimensions.y; y++) {
+            for (int x = 0; x <= dimensions.x; x++) {
+                stringBuilder.append(map.get(new Coordinate(x, y)));
+            }
+            stringBuilder.append("\n");
+        }
+
+        return stringBuilder.toString();
     }
 
     @Override
@@ -37,9 +72,9 @@ public class DaySeventeen implements JavaSolution {
                         .findFirst()
                         .orElseThrow();
 
-        HashSet<Position> visited = new HashSet<>();
+        Set<Visited> visited = new HashSet<>();
         PriorityQueue<QueueEntry> priorityQueue = new PriorityQueue<>(Comparator.comparing(queueEntry -> queueEntry.heatLoss));
-        priorityQueue.add(new QueueEntry(new Position(new Coordinate(0, 0), DOWN), 0, new LinkedList<>()));
+        priorityQueue.add(new QueueEntry(new Position(new Coordinate(0, 0), DOWN), 0, new LinkedList<>(), new ArrayList<>()));
 
         while (!priorityQueue.isEmpty()) {
             QueueEntry queueEntry = priorityQueue.poll();
@@ -48,14 +83,19 @@ public class DaySeventeen implements JavaSolution {
                 return queueEntry.heatLoss;
             }
 
-            if (!visited.contains(queueEntry.position)) {
-                visited.add(queueEntry.position);
+            Visited visit = new Visited(queueEntry.position, queueEntry.lastDirections);
+
+            if (!visited.contains(visit)) {
+                visited.add(visit);
                 List<Position> nextPositions = getNextPositions(queueEntry);
 
                 for (Position nextPosition : nextPositions) {
                     Integer heatLoss = grid.get(nextPosition.coordinate);
 
                     if (heatLoss != null) {
+                        ArrayList<Position> path = new ArrayList<>(queueEntry.path);
+                        path.add(nextPosition);
+
                         if (queueEntry.lastDirections.size() == 3) {
                             boolean isSameDirection =
                                     queueEntry.lastDirections.stream()
@@ -67,7 +107,7 @@ public class DaySeventeen implements JavaSolution {
                                 lastDirections.add(nextPosition.direction);
 
                                 priorityQueue.add(
-                                        new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections)
+                                        new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections, path)
                                 );
                             }
                         } else {
@@ -75,7 +115,7 @@ public class DaySeventeen implements JavaSolution {
                             lastDirections.add(nextPosition.direction);
 
                             priorityQueue.add(
-                                    new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections)
+                                    new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections, path)
                             );
                         }
                     }
