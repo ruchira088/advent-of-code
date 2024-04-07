@@ -32,9 +32,9 @@ public class DaySeventeen implements JavaSolution {
         }
     }
 
-    record Visited(Position position, List<Direction> lastDirections) {}
+    record Visited(Position position, int count) {}
 
-    record QueueEntry(Position position, int heatLoss, LinkedList<Direction> lastDirections, List<Position> path) {
+    record QueueEntry(Position position, int heatLoss, int count) {
     }
 
     String stringify(Map<Coordinate, Integer> grid, List<Position> path, Coordinate dimensions) {
@@ -74,7 +74,8 @@ public class DaySeventeen implements JavaSolution {
 
         Set<Visited> visited = new HashSet<>();
         PriorityQueue<QueueEntry> priorityQueue = new PriorityQueue<>(Comparator.comparing(queueEntry -> queueEntry.heatLoss));
-        priorityQueue.add(new QueueEntry(new Position(new Coordinate(0, 0), DOWN), 0, new LinkedList<>(), new ArrayList<>()));
+        priorityQueue.add(new QueueEntry(new Position(new Coordinate(0, 0), DOWN), 0, 0));
+        priorityQueue.add(new QueueEntry(new Position(new Coordinate(0, 0), RIGHT), 0, 0));
 
         while (!priorityQueue.isEmpty()) {
             QueueEntry queueEntry = priorityQueue.poll();
@@ -83,7 +84,7 @@ public class DaySeventeen implements JavaSolution {
                 return queueEntry.heatLoss;
             }
 
-            Visited visit = new Visited(queueEntry.position, queueEntry.lastDirections);
+            Visited visit = new Visited(queueEntry.position, queueEntry.count);
 
             if (!visited.contains(visit)) {
                 visited.add(visit);
@@ -93,30 +94,36 @@ public class DaySeventeen implements JavaSolution {
                     Integer heatLoss = grid.get(nextPosition.coordinate);
 
                     if (heatLoss != null) {
-                        ArrayList<Position> path = new ArrayList<>(queueEntry.path);
-                        path.add(nextPosition);
+                        boolean sameDirection = queueEntry.position.direction == nextPosition.direction;
 
-                        if (queueEntry.lastDirections.size() == 3) {
-                            boolean isSameDirection =
-                                    queueEntry.lastDirections.stream()
-                                            .allMatch(direction -> direction == nextPosition.direction);
-
-                            if (!isSameDirection) {
-                                LinkedList<Direction> lastDirections = new LinkedList<>(queueEntry.lastDirections);
-                                lastDirections.removeFirst();
-                                lastDirections.add(nextPosition.direction);
-
+                        if (queueEntry.count < 4) {
+                            if (sameDirection) {
                                 priorityQueue.add(
-                                        new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections, path)
+                                        new QueueEntry(
+                                                nextPosition,
+                                                queueEntry.heatLoss + heatLoss,
+                                                queueEntry.count + 1
+                                        )
                                 );
                             }
-                        } else {
-                            LinkedList<Direction> lastDirections = new LinkedList<>(queueEntry.lastDirections);
-                            lastDirections.add(nextPosition.direction);
-
+                        } else if (queueEntry.count < 10) {
                             priorityQueue.add(
-                                    new QueueEntry(nextPosition, queueEntry.heatLoss + heatLoss, lastDirections, path)
+                                    new QueueEntry(
+                                            nextPosition,
+                                            queueEntry.heatLoss + heatLoss,
+                                            sameDirection ? queueEntry.count + 1 : 1
+                                    )
                             );
+                        } else {
+                            if (!sameDirection) {
+                                priorityQueue.add(
+                                        new QueueEntry(
+                                                nextPosition,
+                                                queueEntry.heatLoss + heatLoss,
+                                                1
+                                        )
+                                );
+                            }
                         }
                     }
                 }
