@@ -16,6 +16,6 @@ lazy val rootDependencies =
   Seq(fs2IO)
 
 lazy val rootTestDependencies =
-  Seq(scalaTest, pegdown)
+  Seq(scalaTest, junit, junitInterface, pegdown)
 
 addCommandAlias("testWithCoverage", "; coverage; test; coverageReport")
