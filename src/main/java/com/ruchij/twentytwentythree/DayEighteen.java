@@ -2,7 +2,7 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class DayEighteen implements JavaSolution {
@@ -27,11 +27,72 @@ public class DayEighteen implements JavaSolution {
         }
     }
 
-    record Instruction(Direction direction, int meters, String color) {}
+    record Instruction(Direction direction, int meters, String color) {
+    }
+
+    record Coordinate(int x, int y) {
+    }
 
     @Override
     public Object solve(Stream<String> input) {
-        return null;
+        List<Instruction> instructions = input.map(this::parse).toList();
+
+        List<Coordinate> holes = dig(instructions);
+        HashSet<Coordinate> boundary = new HashSet<>(holes);
+
+        Coordinate start = new Coordinate(1, 1);
+        ArrayDeque<Coordinate> queue = new ArrayDeque<>();
+        queue.add(start);
+
+        HashSet<Coordinate> visited = new HashSet<>();
+
+        while (!queue.isEmpty()) {
+            Coordinate position = queue.pop();
+
+            if (!visited.contains(position)) {
+                visited.add(position);
+
+                int x = position.x;
+                int y = position.y;
+
+                Stream.of(
+                        new Coordinate(x, y + 1),
+                        new Coordinate(x, y - 1),
+                        new Coordinate(x + 1, y),
+                        new Coordinate(x - 1, y)
+                )
+                        .filter(coordinate -> !boundary.contains(coordinate))
+                        .filter(coordinate -> !visited.contains(coordinate))
+                        .forEach(queue::add);
+            }
+        }
+
+        return boundary.size() + visited.size();
+    }
+
+    void print(HashSet<Coordinate> coordinates) {
+        Comparator<Coordinate> sortX = Comparator.comparing(Coordinate::x);
+        Comparator<Coordinate> sortY = Comparator.comparing(Coordinate::y);
+
+        int maxX = coordinates.stream().max(sortX).get().x;
+        int maxY = coordinates.stream().max(sortY).get().y;
+
+        System.out.println(maxX);
+        System.out.println(maxY);
+
+        for (int y = 0; y <= maxY; y++) {
+            for (int x = 0; x <= maxX; x++) {
+                Coordinate coordinate = new Coordinate(x, y);
+
+                if (coordinates.contains(coordinate)) {
+                    System.out.print("#");
+                } else {
+                    System.out.print(".");
+                }
+            }
+
+            System.out.println();
+        }
     }
 
     Instruction parse(String line) {
@@ -41,5 +102,29 @@ public class DayEighteen implements JavaSolution {
         String color = terms[2].substring(2, terms[2].length() - 1);
 
         return new Instruction(direction, meters, color);
+    }
+
+    List<Coordinate> dig(List<Instruction> instructions) {
+        ArrayList<Coordinate> path = new ArrayList<>();
+        Coordinate position = new Coordinate(0, 0);
+
+        for (Instruction instruction : instructions) {
+            for (int step = 0; step < instruction.meters; step++) {
+                int x = position.x;
+                int y = position.y;
+
+                position =
+                        switch (instruction.direction) {
+                            case UP -> new Coordinate(x, y - 1);
+                            case DOWN -> new Coordinate(x, y + 1);
+                            case LEFT -> new Coordinate(x - 1, y);
+                            case RIGHT -> new Coordinate(x + 1, y);
+                        };
+
+                path.add(position);
+            }
+        }
+
+        return path;
     }
 }
