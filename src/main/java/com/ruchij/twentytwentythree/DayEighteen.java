@@ -27,15 +27,24 @@ public class DayEighteen implements JavaSolution {
         }
     }
 
-    record Instruction(Direction direction, int meters, String color) {
+    record InputInstruction(Direction direction, int meters, String color) {
+        Instruction simple() {
+            return new Instruction(direction, meters);
+        }
     }
+
+    record Instruction(Direction direction, int meters) {}
 
     record Coordinate(int x, int y) {
     }
 
     @Override
     public Object solve(Stream<String> input) {
-        List<Instruction> instructions = input.map(this::parse).toList();
+        List<Instruction> instructions =
+                input.map(this::parse)
+                        .map(inputInstruction -> hexToInstruction(inputInstruction.color))
+//                        .map(InputInstruction::simple)
+                        .toList();
 
         List<Coordinate> holes = dig(instructions);
         HashSet<Coordinate> boundary = new HashSet<>(holes);
@@ -70,6 +79,23 @@ public class DayEighteen implements JavaSolution {
         return boundary.size() + visited.size();
     }
 
+    Instruction hexToInstruction(String hex) {
+        int digits = HexFormat.fromHexDigits(hex.substring(0, 5));
+
+        Direction direction =
+                switch (hex.charAt(5)) {
+                    case '0' -> Direction.RIGHT;
+                    case '1' -> Direction.DOWN;
+                    case '2' -> Direction.LEFT;
+                    case '3' -> Direction.UP;
+                    default -> throw new IllegalStateException("Unexpected value: " + hex.charAt(5));
+                };
+
+        Instruction instruction = new Instruction(direction, digits);
+
+        return instruction;
+    }
+
     void print(HashSet<Coordinate> coordinates) {
         Comparator<Coordinate> sortX = Comparator.comparing(Coordinate::x);
         Comparator<Coordinate> sortY = Comparator.comparing(Coordinate::y);
@@ -95,20 +121,20 @@ public class DayEighteen implements JavaSolution {
         }
     }
 
-    Instruction parse(String line) {
+    InputInstruction parse(String line) {
         String[] terms = line.trim().split(" ");
         Direction direction = Direction.fromSymbol(terms[0].charAt(0));
         int meters = Integer.parseInt(terms[1]);
         String color = terms[2].substring(2, terms[2].length() - 1);
 
-        return new Instruction(direction, meters, color);
+        return new InputInstruction(direction, meters, color);
     }
 
-    List<Coordinate> dig(List<Instruction> instructions) {
+    List<Coordinate> dig(List<Instruction> inputInstructions) {
         ArrayList<Coordinate> path = new ArrayList<>();
         Coordinate position = new Coordinate(0, 0);
 
-        for (Instruction instruction : instructions) {
+        for (Instruction instruction : inputInstructions) {
             for (int step = 0; step < instruction.meters; step++) {
                 int x = position.x;
                 int y = position.y;
