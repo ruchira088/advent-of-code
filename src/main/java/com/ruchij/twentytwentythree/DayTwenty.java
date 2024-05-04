@@ -2,6 +2,7 @@ package com.ruchij.twentytwentythree;
 
 import com.ruchij.JavaSolution;
 
+import java.text.DecimalFormat;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -142,26 +143,33 @@ public class DayTwenty implements JavaSolution {
             }
         }
 
-        HashMap<Pulse, Long> count = new HashMap<>();
+        long count = 0;
+        boolean result = false;
+        DecimalFormat decimalFormat = new DecimalFormat();
 
-        for (int i = 0; i < 1000; i++) {
-            sendPulse(modules, count);
+        while (!result) {
+            count++;
+            if (count % 1_000_000 == 0) {
+                System.out.println(decimalFormat.format(count));
+            }
+            result = sendPulse(modules);
         }
 
-        Long result = count.values().stream().reduce(1L, (a, b) -> a * b);
-
-        return result;
+        return count;
     }
 
-    void sendPulse(Map<String, Module> modules, Map<Pulse, Long> count) {
+    boolean sendPulse(Map<String, Module> modules) {
         ArrayDeque<State> deque = new ArrayDeque<>();
         deque.add(new State(Broadcaster.LABEL, Pulse.LOW, null));
 
         while (!deque.isEmpty()) {
             State state = deque.poll();
+
+            if (state.label.equals("rx") && state.pulse == Pulse.LOW) {
+                return true;
+            }
+
             Module module = modules.get(state.label);
-            Long current = count.getOrDefault(state.pulse, 0L);
-            count.put(state.pulse, current + 1);
 
             if (module != null) {
                 Optional<Pulse> pulseOptional = module.process(state.pulse, state.sender);
@@ -173,6 +181,8 @@ public class DayTwenty implements JavaSolution {
                 });
             }
         }
+
+        return false;
     }
 
     record State(String label, Pulse pulse, String sender) {
