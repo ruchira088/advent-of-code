@@ -26,8 +26,16 @@ public class DayTwentyOne implements JavaSolution {
 
     @Override
     public Object solve(Stream<String> input) {
-        int stepTarget = 64;
+        int stepTarget = 100;
         Map<Coordinate, Cell> grid = parseInput(input);
+
+        Comparator<Coordinate> xSort = Comparator.comparingInt(Coordinate::x);
+        Comparator<Coordinate> ySort = Comparator.comparingInt(Coordinate::y);
+
+        Coordinate dimensions = grid.keySet().stream().sorted(xSort.thenComparing(ySort).reversed())
+                .map(coordinate -> new Coordinate(coordinate.x + 1, coordinate.y + 1))
+                .findFirst()
+                .orElseThrow();
 
         Coordinate startingPosition = grid.entrySet().stream()
                 .filter(entry -> entry.getValue() == Cell.STARTING_POSITION)
@@ -47,7 +55,7 @@ public class DayTwentyOne implements JavaSolution {
                 visited.add(currentPosition);
 
                 if (currentPosition.stepCount < stepTarget) {
-                    for (Coordinate next : next(currentPosition.coordinate, grid)) {
+                    for (Coordinate next : next(currentPosition.coordinate, grid, dimensions)) {
                         queue.add(new Position(currentPosition.stepCount + 1, next));
                     }
                 } else if (currentPosition.stepCount == stepTarget) {
@@ -59,7 +67,7 @@ public class DayTwentyOne implements JavaSolution {
         return reached.size();
     }
 
-    Set<Coordinate> next(Coordinate coordinate, Map<Coordinate, Cell> grid) {
+    Set<Coordinate> next(Coordinate coordinate, Map<Coordinate, Cell> grid, Coordinate dimensions) {
         int x = coordinate.x;
         int y = coordinate.y;
 
@@ -69,7 +77,16 @@ public class DayTwentyOne implements JavaSolution {
                 new Coordinate(x, y - 1),
                 new Coordinate(x, y + 1)
         ).filter(current -> {
-            Cell cell = grid.get(current);
+            int modX = current.x % dimensions.x;
+            int modY = current.y % dimensions.y;
+
+            Coordinate modCoordinate =
+                    new Coordinate(
+                            modX < 0 ? modX + dimensions.x : modX,
+                            modY < 0 ? modY + dimensions.y : modY
+                    );
+
+            Cell cell = grid.get(modCoordinate);
             return cell == Cell.STARTING_POSITION || cell == Cell.GARDEN_PLOT;
         }).collect(Collectors.toSet());
 
