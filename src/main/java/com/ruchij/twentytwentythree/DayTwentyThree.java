@@ -41,6 +41,7 @@ public class DayTwentyThree implements JavaSolution {
 
             if (!entry.visited.contains(coordinate)) {
                 if (coordinate.equals(game.end)) {
+                    System.out.println(entry.visited.size());
                     count.add(entry.visited.size());
                 } else {
                     Set<Coordinate> visited = new HashSet<>(entry.visited);
@@ -51,26 +52,18 @@ public class DayTwentyThree implements JavaSolution {
                     int y = coordinate.y;
 
                     if (tile != null && tile != Tile.FOREST) {
-                        if (tile == Tile.PATH) {
+                        Set<Coordinate> coordinates = Set.of(
+                                new Coordinate(x + 1, y),
+                                new Coordinate(x - 1, y),
+                                new Coordinate(x, y + 1),
+                                new Coordinate(x, y - 1)
+                        );
 
-                            Set<Coordinate> coordinates = Set.of(
-                                    new Coordinate(x + 1, y),
-                                    new Coordinate(x - 1, y),
-                                    new Coordinate(x, y + 1),
-                                    new Coordinate(x, y - 1)
-                            );
-
-                            for (Coordinate next : coordinates) {
+                        for (Coordinate next : coordinates) {
+                            Tile nextTile = game.map.get(next);
+                            if (nextTile != null && nextTile != Tile.FOREST) {
                                 entries.add(new Entry(next, visited));
                             }
-                        } else if (tile == Tile.UP) {
-                            entries.add(new Entry(new Coordinate(x, y - 1), visited));
-                        } else if (tile == Tile.DOWN) {
-                            entries.add(new Entry(new Coordinate(x, y + 1), visited));
-                        } else if (tile == Tile.LEFT) {
-                            entries.add(new Entry(new Coordinate(x - 1, y), visited));
-                        } else if (tile == Tile.RIGHT) {
-                            entries.add(new Entry(new Coordinate(x + 1, y), visited));
                         }
                     }
                 }
