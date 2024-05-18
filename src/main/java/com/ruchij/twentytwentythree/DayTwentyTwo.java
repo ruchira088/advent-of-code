@@ -61,7 +61,8 @@ public class DayTwentyTwo implements JavaSolution {
     bricks.sort(Comparator.comparing(brick -> brick.start.z));
 
     Map<Coordinate, Brick> grid = new HashMap<>();
-    Map<Brick, Set<Brick>> blocked = new HashMap<>();
+    Map<Brick, Set<Brick>> supportedBy = new HashMap<>();
+    Map<Brick, Set<Brick>> supporting = new HashMap<>();
 
     for (Brick brick : bricks) {
       Brick current = brick;
@@ -73,7 +74,12 @@ public class DayTwentyTwo implements JavaSolution {
 
         if (blocking.onFloor || !blocking.bricks.isEmpty()) {
           isBlocked = true;
-          blocked.put(current, blocking.bricks);
+          supportedBy.put(current, blocking.bricks);
+          for (Brick supportingBrick : blocking.bricks) {
+            Set<Brick> brickSet = supporting.getOrDefault(supportingBrick, new HashSet<>());
+            brickSet.add(current);
+            supporting.put(supportingBrick, brickSet);
+          }
         } else {
           current = fall;
         }
@@ -86,13 +92,39 @@ public class DayTwentyTwo implements JavaSolution {
 
     HashSet<Brick> cantBeRemoved = new HashSet<>();
 
-    for (Set<Brick> brickSet : blocked.values()) {
+    for (Set<Brick> brickSet : supportedBy.values()) {
       if (brickSet.size() == 1) {
         cantBeRemoved.addAll(brickSet);
       }
     }
 
-    return bricks.size() - cantBeRemoved.size();
+    Comparator<Brick> comparator = Comparator.comparing(brick -> Math.max(brick.end.z, brick.start.z));
+
+    List<Brick> stacked = cantBeRemoved.stream().sorted(comparator.reversed()).toList();
+
+    long count = 0;
+
+    for (Brick brick : stacked) {
+      HashSet<Brick> removed = new HashSet<>();
+      removed.add(brick);
+      Set<Brick> brickSet = fallenBrick(brick, supportedBy, supporting, removed);
+      count += brickSet.size() - 1;
+    }
+
+    return count;
+  }
+
+  Set<Brick> fallenBrick(Brick brick, Map<Brick, Set<Brick>> supportedBy, Map<Brick, Set<Brick>> supporting, Set<Brick> removed) {
+    Set<Brick> brickSet = supporting.getOrDefault(brick, new HashSet<>());
+
+    for (Brick supportingBrick : brickSet) {
+      Set<Brick> supportedBySet = supportedBy.get(supportingBrick);
+      if (removed.containsAll(supportedBySet)) {
+        removed.add(supportingBrick);
+        fallenBrick(supportingBrick, supportedBy, supporting, removed);
+      }
+    }
+    return removed;
   }
 
   record Blocking(boolean onFloor, Set<Brick> bricks) {}
