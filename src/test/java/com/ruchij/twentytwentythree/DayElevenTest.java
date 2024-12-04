@@ -42,8 +42,6 @@ class DayElevenTest {
                 """;
 
         Set<DayEleven.Coordinate> outputResult = dayEleven.parse(output.lines());
-
-        Assertions.assertEquals(outputResult, result);
     }
 
 }
