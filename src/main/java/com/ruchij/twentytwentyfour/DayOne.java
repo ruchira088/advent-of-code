@@ -2,10 +2,7 @@ package com.ruchij.twentytwentyfour;
 
 import com.ruchij.JavaSolution;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Stream;
 
 public class DayOne implements JavaSolution {
@@ -15,15 +12,17 @@ public class DayOne implements JavaSolution {
     public Object solve(Stream<String> input) {
         Pair<List<Long>, List<Long>> listPair = parse(input);
 
-        listPair.first.sort(Comparator.naturalOrder());
-        listPair.second.sort(Comparator.naturalOrder());
+        HashMap<Long, Integer> count = new HashMap<>();
+
+        for (Long number : listPair.second) {
+            count.put(number, count.getOrDefault(number, 0) + 1);
+        }
 
         long result = 0;
 
-        for (int i = 0; i < listPair.first.size(); i++) {
-            result += Math.abs(listPair.first.get(i) - listPair.second.get(i));
+        for (Long number : listPair.first) {
+            result += number * count.getOrDefault(number, 0);
         }
-
 
         return result;
     }
